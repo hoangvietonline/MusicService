@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent"
+    android:layout_height="64dp"
+    android:orientation="horizontal"
+    android:background="@drawable/background_list"
+    >
+
+    <ImageView
+        android:id="@+id/imgAvatarNotify"
+        android:layout_width="64dp"
+        android:layout_height="match_parent"
+        android:src="@drawable/icon_music" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:layout_marginStart="20dp"
+        >
+        <TextView
+            android:id="@+id/txtMusicNameNotify"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:text="@string/music_name"
+            android:textSize="15sp"
+            android:textColor="#E90404"
+            style="@style/TextAppearance.Compat.Notification.Title"
+            />
+        <TextView
+            android:id="@+id/txtSingerNotify"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/singer"
+            android:textSize="11sp"
+            android:textColor="#0E5DDD"
+            style="@style/TextAppearance.Compat.Notification.Line2"
+            />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            >
+            <ImageButton
+                android:id="@+id/btnPreviousNotify"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/icon_previous"
+                android:background="@null"
+                />
+            <ImageButton
+                android:id="@+id/btnPlayNotify"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/icon_play"
+                android:background="@null"
+                android:layout_marginStart="40dp"
+                />
+            <ImageButton
+                android:id="@+id/btnNextNotify"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/icon_next"
+                android:background="@null"
+                android:layout_marginStart="40dp"
+                />
+
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>
