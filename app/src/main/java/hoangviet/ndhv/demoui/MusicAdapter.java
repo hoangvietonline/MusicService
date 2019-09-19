@@ -41,6 +41,7 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
         musicViewHolder.txtMusicName.setText(music.getMusicName());
         musicViewHolder.txtMusicSinger.setText(music.getMusicSinger());
         Glide.with(mContext).load(music.getMusicImage()).into(musicViewHolder.imgMusicAvatar);
+
         if (musicList.get(i).isPlay() == true) {
             musicViewHolder.btnPlay.setImageResource(R.drawable.icon_pause);
         } else {
@@ -59,7 +60,7 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
         musicViewHolder.btnPlay.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                onClickItemMusicLitener.onClickButtonPlay(i);
+                onClickItemMusicLitener.onClickButtonPlay(music,i);
             }
         });
     }
@@ -68,15 +69,6 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
     public int getItemCount() {
         return musicList.size();
     }
-
-    interface onClickItemMusicLitener {
-        void onclickItem(int position);
-
-        void onclickNotifications(int position);
-
-        void onClickButtonPlay(int position);
-    }
-
     public class MusicViewHolder extends RecyclerView.ViewHolder {
         private TextView txtMusicName;
         private TextView txtMusicSinger;
@@ -90,5 +82,12 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
             imgMusicAvatar = itemView.findViewById(R.id.imgAvatarMusic);
             btnPlay = itemView.findViewById(R.id.buttonMusicPlay);
         }
+    }
+    interface onClickItemMusicLitener {
+        void onclickItem(int position);
+
+        void onclickNotifications(int position);
+
+        void onClickButtonPlay(Music music,int position);
     }
 }

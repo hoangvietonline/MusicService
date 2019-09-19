@@ -5,6 +5,8 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.os.Build;
@@ -19,13 +21,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class MyServicesMusic extends Service implements MediaPlayer.OnErrorListener{
-    public static MediaPlayer mMediaPlayer;
+public class MyServicesMusic extends Service implements MediaPlayer.OnErrorListener {
     private static final String TAG = "MyServicesMusic";
     private static final String CHANNEL_ID = "channel_id";
+    public static MediaPlayer mMediaPlayer;
     List<Music> musicList;
     int length = 0;
-    int position = 0;
+    int curentTime = 0;
+
+    public MyServicesMusic() {
+
+    }
+
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -37,35 +44,56 @@ public class MyServicesMusic extends Service implements MediaPlayer.OnErrorListe
         super.onCreate();
         musicList = new ArrayList<>();
         addMusic();
-        initMediaPlayer(1);
-        mMediaPlayer.setOnErrorListener(this);
-        if (mMediaPlayer != null) {
-            mMediaPlayer.setLooping(true);
-        }
 
-        if (mMediaPlayer != null) {
-            mMediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
-
-                public boolean onError(MediaPlayer mp, int what, int extra) {
-                    onError(mMediaPlayer, what, extra);
-                    return true;
-                }
-            });
-        }
+//        mMediaPlayer.setOnErrorListener(this);
+//        if (mMediaPlayer != null) {
+//            mMediaPlayer.setLooping(true);
+//        }
+//
+//        if (mMediaPlayer != null) {
+//            mMediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+//
+//                public boolean onError(MediaPlayer mp, int what, int extra) {
+//                    onError(mMediaPlayer, what, extra);
+//                    return true;
+//                }
+//            });
+//        }
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        int i = intent.getIntExtra(Mp3Activity.SERVICES_KEY, 0);
-        initNotifyMusic(i);
-        position = intent.getIntExtra(Mp3Activity.SERVICES_PLAY_KEY, 0);
-        startMusic(position);
+//        int i = intent.getIntExtra(Mp3Activity.SERVICES_KEY, 0);
+////        initNotifyMusic(i);
+        if (intent.hasExtra(Mp3Activity.SERVICES_PLAY_KEY)) {
+            int position = intent.getIntExtra(Mp3Activity.SERVICES_PLAY_KEY, 0);
+//            if (mMediaPlayer == null) {
+            mMediaPlayer = MediaPlayer.create(getApplicationContext(), musicList.get(position).getFileSong());
+//            }
+//            if (intent.hasExtra(Mp3Activity.CURRENT_TIME_KEY)) {
+//                int currenttime = intent.getIntExtra(Mp3Activity.CURRENT_TIME_KEY, 0);
+//                Log.d(TAG, "onStartCommand: "+ currenttime);
+//                mMediaPlayer.seekTo(currenttime);
+//            }
+            mMediaPlayer.start();
+        }
         return START_NOT_STICKY;
     }
 
     @Override
     public void onDestroy() {
-        mMediaPlayer.stop();
+        if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
+            mMediaPlayer.pause();
+            length = mMediaPlayer.getCurrentPosition();
+
+//            Intent intent = new Intent(getApplicationContext(), Mp3Activity.CurrentTimeBroadcast.class);
+//            intent.setAction(Mp3Activity.CurrentTimeBroadcast.SEND_TIME_ACTION);
+//            intent.putExtra(Mp3Activity.CurrentTimeBroadcast.LENGHT_KEY, length);
+//            LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+
+            mMediaPlayer.stop();
+        }
+        super.onDestroy();
     }
 
     private void createNotificationChannel() {
@@ -123,11 +151,7 @@ public class MyServicesMusic extends Service implements MediaPlayer.OnErrorListe
         musicList.add(new Music("Mây và núi", "The Bells", "https://photo-resize-zmp3.zadn.vn/w240_r1x1_jpeg/covers/7/6/764f16e%E2%80%A6_1286532325.jpg", R.raw.may_va_nui));
         musicList.add(new Music("Rồi người thương cũng hóa người dưng", "Hiền Hồ", "https://vcdn-ione.vnecdn.net/2018/12/13/43623062-928967060639978-82410-4074-2366-1544693013.png", R.raw.roi_nguoi_thuong_cung_hoa_nguoi_dung));
     }
-    private void initMediaPlayer(int position) {
-        if (mMediaPlayer == null){
-            mMediaPlayer = MediaPlayer.create(this, musicList.get(position).getFileSong());
-        }
-    }
+
     public void pauseMusic() {
         if (mMediaPlayer != null) {
             if (mMediaPlayer.isPlaying()) {
@@ -147,10 +171,9 @@ public class MyServicesMusic extends Service implements MediaPlayer.OnErrorListe
     }
 
     public void startMusic(int position) {
-        if (mMediaPlayer == null){
-            mMediaPlayer = MediaPlayer.create(getApplicationContext(),musicList.get(position).getFileSong());
-        }
-        if (mMediaPlayer != null) {
+        if (mMediaPlayer == null) {
+            mMediaPlayer = MediaPlayer.create(getApplicationContext(), musicList.get(position).getFileSong());
+        } else {
             mMediaPlayer.setLooping(true);
             mMediaPlayer.start();
         }
@@ -176,5 +199,15 @@ public class MyServicesMusic extends Service implements MediaPlayer.OnErrorListe
             }
         }
         return false;
+    }
+    class CurrentTimeBroadcast extends BroadcastReceiver {
+
+        public static final String SEND_TIME_ACTION = "time_action";
+        public static final String LENGHT_KEY = "length_key";
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+        }
     }
 }
