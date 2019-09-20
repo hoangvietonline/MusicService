@@ -8,26 +8,33 @@ import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.MediaPlayer;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.RemoteViews;
 import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 
 public class MyServicesMusic extends Service implements MediaPlayer.OnErrorListener {
+    public static final String DURATION_KEY = "duration_key";
+    public static final String CURRENT_KEY = "current_key";
     private static final String TAG = "MyServicesMusic";
     private static final String CHANNEL_ID = "channel_id";
     public static MediaPlayer mMediaPlayer;
-    List<Music> musicList;
-    int length = 0;
-    int curentTime = 0;
+    private int oldPossition = 0;
+    private int position = 0;
+    private List<Music> musicList;
+    private CurrentTimeBroadcast broadcast;
 
     public MyServicesMusic() {
 
@@ -44,61 +51,154 @@ public class MyServicesMusic extends Service implements MediaPlayer.OnErrorListe
         super.onCreate();
         musicList = new ArrayList<>();
         addMusic();
-
-//        mMediaPlayer.setOnErrorListener(this);
-//        if (mMediaPlayer != null) {
-//            mMediaPlayer.setLooping(true);
-//        }
-//
-//        if (mMediaPlayer != null) {
-//            mMediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
-//
-//                public boolean onError(MediaPlayer mp, int what, int extra) {
-//                    onError(mMediaPlayer, what, extra);
-//                    return true;
-//                }
-//            });
-//        }
     }
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-//        int i = intent.getIntExtra(Mp3Activity.SERVICES_KEY, 0);
-////        initNotifyMusic(i);
-        if (intent.hasExtra(Mp3Activity.SERVICES_PLAY_KEY)) {
-            int position = intent.getIntExtra(Mp3Activity.SERVICES_PLAY_KEY, 0);
-//            if (mMediaPlayer == null) {
-            mMediaPlayer = MediaPlayer.create(getApplicationContext(), musicList.get(position).getFileSong());
-//            }
-//            if (intent.hasExtra(Mp3Activity.CURRENT_TIME_KEY)) {
-//                int currenttime = intent.getIntExtra(Mp3Activity.CURRENT_TIME_KEY, 0);
-//                Log.d(TAG, "onStartCommand: "+ currenttime);
-//                mMediaPlayer.seekTo(currenttime);
-//            }
-            mMediaPlayer.start();
-        }
+    public int onStartCommand(final Intent intent, final int flags, int startId) {
+        int i = intent.getIntExtra(Mp3Activity.SERVICES_KEY, 0);
+        initNotifyMusic(i);
+
+        broadcast = new CurrentTimeBroadcast();
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(CurrentTimeBroadcast.SEND_PLAY_ACTION);
+        intentFilter.addAction(CurrentTimeBroadcast.SEND_PREVIOUS_PLAY_MUSIC_ACTION);
+        intentFilter.addAction(CurrentTimeBroadcast.SEND_NEXT_PLAY_MUSIC_ACTION);
+        intentFilter.addAction(CurrentTimeBroadcast.SEND_PLAY_PLAY_MUSIC_ACTION);
+        LocalBroadcastManager.getInstance(this).registerReceiver(broadcast, intentFilter);
+
+        broadcast.setListener(new onClickBroadcast() {
+            @Override
+            public void onClickPlay(int position) {
+                if (mMediaPlayer != null) {
+                    if (oldPossition != position) {
+                        stopMusic();
+                        mMediaPlayer = MediaPlayer.create(getApplicationContext(), musicList.get(position).getFileSong());
+                        mMediaPlayer.start();
+                    } else {
+                        if (mMediaPlayer.isPlaying()) {
+                            pauseMusic();
+                        } else {
+                            resumeMusic();
+                        }
+                    }
+                    oldPossition = position;
+                } else {
+                    mMediaPlayer = MediaPlayer.create(getApplicationContext(), musicList.get(position).getFileSong());
+                    mMediaPlayer.start();
+                }
+
+            }
+
+            @Override
+            public void onClickPreviousMusic(int position) {
+                if (mMediaPlayer != null) {
+                    if (position < 0) {
+                        position = musicList.size() - 1;
+                    }
+                    if (mMediaPlayer.isPlaying()) {
+                        mMediaPlayer.stop();
+                    }
+                    mMediaPlayer = MediaPlayer.create(getApplicationContext(), musicList.get(position).getFileSong());
+                    mMediaPlayer.start();
+                } else {
+                    mMediaPlayer = MediaPlayer.create(getApplicationContext(), musicList.get(position).getFileSong());
+                    mMediaPlayer.start();
+                }
+                mediaPlayerDuration();
+                mediaPlayerCurrentTime();
+
+            }
+
+            @Override
+            public void onClickNextMusic(int position) {
+                if (mMediaPlayer != null) {
+                    if (position > musicList.size() - 1) {
+                        position = 0;
+                    }
+                    if (mMediaPlayer.isPlaying()) {
+                        mMediaPlayer.stop();
+                    }
+                    mMediaPlayer = MediaPlayer.create(getApplicationContext(), musicList.get(position).getFileSong());
+                    mMediaPlayer.start();
+                } else {
+                    mMediaPlayer = MediaPlayer.create(getApplicationContext(), musicList.get(position).getFileSong());
+                    mMediaPlayer.start();
+                }
+                mediaPlayerDuration();
+                mediaPlayerCurrentTime();
+            }
+
+            @Override
+            public void onClickPlayMusic(int position) {
+                if (mMediaPlayer != null) {
+                    if (mMediaPlayer.isPlaying()) {
+                        pauseMusic();
+                    } else {
+                        resumeMusic();
+                    }
+                } else {
+                    mMediaPlayer = MediaPlayer.create(getApplicationContext(), musicList.get(position).getFileSong());
+                    mMediaPlayer.start();
+                }
+                mediaPlayerDuration();
+                mediaPlayerCurrentTime();
+            }
+        });
         return START_NOT_STICKY;
     }
 
     @Override
     public void onDestroy() {
         if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
-            mMediaPlayer.pause();
-            length = mMediaPlayer.getCurrentPosition();
-
-//            Intent intent = new Intent(getApplicationContext(), Mp3Activity.CurrentTimeBroadcast.class);
-//            intent.setAction(Mp3Activity.CurrentTimeBroadcast.SEND_TIME_ACTION);
-//            intent.putExtra(Mp3Activity.CurrentTimeBroadcast.LENGHT_KEY, length);
-//            LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
-
             mMediaPlayer.stop();
         }
         super.onDestroy();
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcast);
+    }
+
+    public void mediaPlayerDuration() {
+        int duration = mMediaPlayer.getDuration();
+        Intent intentDuration = new Intent();
+        intentDuration.setAction(PlayMusicActivity.MediaPlayerBroadcast.SEND_DURATION_MEDIAPLAYER);
+        intentDuration.putExtra(DURATION_KEY, duration);
+        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intentDuration);
+    }
+    public void mediaPlayerCurrentTime(){
+        final Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                int currentMediaPlayer = mMediaPlayer.getCurrentPosition();
+                Intent intentCurrent = new Intent();
+                intentCurrent.setAction(PlayMusicActivity.MediaPlayerBroadcast.SEND_CURRENT_MEDIAPLAYER);
+                intentCurrent.putExtra(CURRENT_KEY,currentMediaPlayer);
+                LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intentCurrent);
+
+                // kiểm tra thời gian của bài hát khi hết bài --->next
+                mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                    @Override
+                    public void onCompletion(MediaPlayer mp) {
+                        position++;
+                        if (position > musicList.size() - 1) {
+                            position = 0;
+                        }
+                        if (mMediaPlayer.isPlaying()) {
+                            mMediaPlayer.stop();
+                        }
+                        mMediaPlayer = MediaPlayer.create(getApplicationContext(),musicList.get(position).getFileSong());
+                        mMediaPlayer.start();
+                    }
+                });
+
+                handler.postDelayed(this, 500);
+
+            }
+        }, 100);
     }
 
     private void createNotificationChannel() {
         // Create the NotificationChannel, but only on API 26+ because
-        // the NotificationChannel class is new and not in the support library
+        // the NotificationChannel class is new and not in the support library`
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             CharSequence name = getString(R.string.channel_name);
             String description = getString(R.string.channel_description);
@@ -109,7 +209,6 @@ public class MyServicesMusic extends Service implements MediaPlayer.OnErrorListe
             notificationManager.createNotificationChannel(channel);
         }
     }
-
 
     private void initNotifyMusic(int position) {
         String image = musicList.get(position).getMusicImage();
@@ -156,7 +255,6 @@ public class MyServicesMusic extends Service implements MediaPlayer.OnErrorListe
         if (mMediaPlayer != null) {
             if (mMediaPlayer.isPlaying()) {
                 mMediaPlayer.pause();
-                length = mMediaPlayer.getCurrentPosition();
             }
         }
     }
@@ -164,7 +262,6 @@ public class MyServicesMusic extends Service implements MediaPlayer.OnErrorListe
     public void resumeMusic() {
         if (mMediaPlayer != null) {
             if (!mMediaPlayer.isPlaying()) {
-                mMediaPlayer.seekTo(length);
                 mMediaPlayer.start();
             }
         }
@@ -174,7 +271,6 @@ public class MyServicesMusic extends Service implements MediaPlayer.OnErrorListe
         if (mMediaPlayer == null) {
             mMediaPlayer = MediaPlayer.create(getApplicationContext(), musicList.get(position).getFileSong());
         } else {
-            mMediaPlayer.setLooping(true);
             mMediaPlayer.start();
         }
     }
@@ -200,14 +296,49 @@ public class MyServicesMusic extends Service implements MediaPlayer.OnErrorListe
         }
         return false;
     }
-    class CurrentTimeBroadcast extends BroadcastReceiver {
 
-        public static final String SEND_TIME_ACTION = "time_action";
-        public static final String LENGHT_KEY = "length_key";
+    public interface onClickBroadcast {
+        void onClickPlay(int pos);
+
+        void onClickPreviousMusic(int position);
+
+        void onClickNextMusic(int pos);
+
+        void onClickPlayMusic(int pos);
+    }
+
+    static class CurrentTimeBroadcast extends BroadcastReceiver {
+
+        public static final String SEND_PLAY_ACTION = "play_action";
+        public static final String SEND_PREVIOUS_PLAY_MUSIC_ACTION = "previous_play_music_action";
+        public static final String SEND_NEXT_PLAY_MUSIC_ACTION = "next_play_music_action";
+        public static final String SEND_PLAY_PLAY_MUSIC_ACTION = "play_play_music_action";
+        private onClickBroadcast listener;
+
+        void setListener(onClickBroadcast listener) {
+            this.listener = listener;
+        }
 
         @Override
         public void onReceive(Context context, Intent intent) {
-
+            switch (Objects.requireNonNull(intent.getAction())) {
+                case SEND_PLAY_ACTION:
+                    int pos = intent.getIntExtra(Mp3Activity.POS_KEY, 0);
+                    listener.onClickPlay(pos);
+                    break;
+                case SEND_PREVIOUS_PLAY_MUSIC_ACTION:
+                    int positionPrevious = intent.getIntExtra(PlayMusicActivity.POSITION_PREVIOUS_MUSIC_PLAY, 0);
+                    listener.onClickPreviousMusic(positionPrevious);
+                    break;
+                case SEND_NEXT_PLAY_MUSIC_ACTION:
+                    int positionNext = intent.getIntExtra(PlayMusicActivity.POSITION_NEXT_MUSIC_PLAY, 0);
+                    listener.onClickNextMusic(positionNext);
+                    break;
+                case SEND_PLAY_PLAY_MUSIC_ACTION:
+                    int positionPlay = intent.getIntExtra(PlayMusicActivity.POSITION_PLAY_MUSIC_PLAY, 0);
+                    listener.onClickPlayMusic(positionPlay);
+                    break;
+            }
         }
     }
 }

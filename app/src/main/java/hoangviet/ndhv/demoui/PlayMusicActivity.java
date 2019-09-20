@@ -1,10 +1,11 @@
 package hoangviet.ndhv.demoui;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.media.MediaPlayer;
 import android.os.Bundle;
-import android.os.Handler;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -18,22 +19,24 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
-import static hoangviet.ndhv.demoui.MyServicesMusic.mMediaPlayer;
-
 
 public class PlayMusicActivity extends AppCompatActivity implements BroadcastMusic.OnclickNotifyBroadcast {
+    public static final String POSITION_PREVIOUS_MUSIC_PLAY = "position_previous_music_play";
+    public static final String POSITION_PLAY_MUSIC_PLAY = "position_play_music_play";
+    public static final String POSITION_NEXT_MUSIC_PLAY = "position_next_music_play";
     private static final String TAG = "PlayMusicActivity";
-
     private CircleImageView imgAvatarPlayMusic;
     private TextView txtNamePlayMusic, txtSingerMusic, txtTimeRun, txtTimeSum;
     private ImageButton btnPlayMusic, btnPreviousMusic, btnNextMusic, btnRepeatMusic, btnShuffleMusic;
     private SeekBar seekBarPlayMusic;
     private List<Music> list;
-    private List<Music> listRepeat;
-    private int position = 0;
+    private int position;
+    private Music music;
+    private MediaPlayerBroadcast mediaPlayerBroadcast;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,31 +49,62 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         intentFilter.addAction(BroadcastMusic.BUTTON_PLAY);
         intentFilter.addAction(BroadcastMusic.BUTTON_NEXT);
         registerReceiver(broadcastMusic, intentFilter);
-
         broadcastMusic.setMyBroadcastCall(this);
+
+
+
+        mediaPlayerBroadcast = new MediaPlayerBroadcast();
+        IntentFilter intentFilterMediaPlayer = new IntentFilter();
+        intentFilterMediaPlayer.addAction(MediaPlayerBroadcast.SEND_DURATION_MEDIAPLAYER);
+        intentFilterMediaPlayer.addAction(MediaPlayerBroadcast.SEND_CURRENT_MEDIAPLAYER);
+        LocalBroadcastManager.getInstance(this).registerReceiver(mediaPlayerBroadcast,intentFilterMediaPlayer);
+
+        mediaPlayerBroadcast.setTakeMediaPlayer(new TakeMediaPlayer() {
+            @Override
+            public void takeDuarationMediaPlayer(int duration) {
+                setTimetotal(duration);
+            }
+
+            @Override
+            public void takeCurrentMediaPlayer(int current) {
+                SimpleDateFormat formatMinute = new SimpleDateFormat("mm:ss");
+                txtTimeRun.setText(formatMinute.format(current));
+                seekBarPlayMusic.setProgress(current);
+            }
+        });
+
+
         bind();
         list = new ArrayList<>();
-        listRepeat = new ArrayList<>();
         addMusic();
-        listRepeat = list;
-
-        Log.d(TAG, "onCreate:size "+listRepeat.size());
-        Intent intent = getIntent();
-        Bundle bundle = intent.getBundleExtra(Mp3Activity.BUNDLE_KEY);
+        final Intent intent = getIntent();
+        final Bundle bundle = intent.getBundleExtra(Mp3Activity.BUNDLE_KEY);
         if (bundle != null) {
             position = bundle.getInt(Mp3Activity.POSITION_KEY);
         }
 
-        if (!mMediaPlayer.isPlaying()) {
-            initMediaPlayer(position);
-            mMediaPlayer.start();
-            btnPlayMusic.setImageResource(R.drawable.icon_pause);
-        } else {
-            btnPlayMusic.setImageResource(R.drawable.icon_play);
+        music = null;
+        if (bundle != null) {
+            music = bundle.getParcelable(Mp3Activity.MUSIC_KEY);
         }
-        setTimetotal();
-        updateTimeSong();
 
+        if (music.isPlay() == true) {
+            btnPlayMusic.setImageResource(R.drawable.icon_play);
+            music.setPlay(false);
+
+        } else {
+            btnPlayMusic.setImageResource(R.drawable.icon_pause);
+            music.setPlay(true);
+
+        }
+        Intent intentPlayMusic = new Intent();
+        intentPlayMusic.setAction(MyServicesMusic.CurrentTimeBroadcast.SEND_PLAY_PLAY_MUSIC_ACTION);
+        intentPlayMusic.putExtra(POSITION_PLAY_MUSIC_PLAY, position);
+        LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentPlayMusic);
+
+        initMediaPlayer(position);
+
+//button shuffle array and repeat music
         btnShuffleMusic.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -80,9 +114,9 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         btnRepeatMusic.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                list = listRepeat;
             }
         });
+
         btnPreviousMusic.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -90,13 +124,11 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
                 if (position < 0) {
                     position = list.size() - 1;
                 }
-                if (mMediaPlayer.isPlaying()) {
-                    mMediaPlayer.stop();
-                }
+                Intent intentPreviousMusic = new Intent();
+                intentPreviousMusic.setAction(MyServicesMusic.CurrentTimeBroadcast.SEND_PREVIOUS_PLAY_MUSIC_ACTION);
+                intentPreviousMusic.putExtra(POSITION_PREVIOUS_MUSIC_PLAY, position);
+                LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentPreviousMusic);
                 initMediaPlayer(position);
-                mMediaPlayer.start();
-                setTimetotal();
-                updateTimeSong();
             }
         });
         btnNextMusic.setOnClickListener(new View.OnClickListener() {
@@ -106,29 +138,32 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
                 if (position > list.size() - 1) {
                     position = 0;
                 }
-                if (mMediaPlayer.isPlaying()) {
-                    mMediaPlayer.stop();
-                }
+                Intent intentNextMusic = new Intent();
+                intentNextMusic.setAction(MyServicesMusic.CurrentTimeBroadcast.SEND_NEXT_PLAY_MUSIC_ACTION);
+                intentNextMusic.putExtra(POSITION_NEXT_MUSIC_PLAY, position);
+                LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentNextMusic);
                 initMediaPlayer(position);
-                mMediaPlayer.start();
-                setTimetotal();
-                updateTimeSong();
             }
         });
 
         btnPlayMusic.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (mMediaPlayer.isPlaying()) {
-                    mMediaPlayer.pause();
-                    btnPlayMusic.setImageResource(R.drawable.icon_play);
-                } else {
-                    mMediaPlayer.start();
+                Intent intentPlayMusic = new Intent();
+                intentPlayMusic.setAction(MyServicesMusic.CurrentTimeBroadcast.SEND_PLAY_PLAY_MUSIC_ACTION);
+                intentPlayMusic.putExtra(POSITION_PLAY_MUSIC_PLAY, position);
+                LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentPlayMusic);
+                initMediaPlayer(position);
+                if (music.isPlay() == true) {
                     btnPlayMusic.setImageResource(R.drawable.icon_pause);
+                    music.setPlay(false);
+                } else {
+                    btnPlayMusic.setImageResource(R.drawable.icon_play);
+                    music.setPlay(true);
                 }
-                updateTimeSong();
             }
         });
+
         seekBarPlayMusic.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -142,7 +177,7 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                mMediaPlayer.seekTo(seekBar.getProgress());
+//                mMediaPlayer.seekTo(seekBar.getProgress());
             }
         });
 
@@ -172,91 +207,77 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
     }
 
     private void initMediaPlayer(int position) {
-        mMediaPlayer = MediaPlayer.create(this, list.get(position).getFileSong());
         Glide.with(this).load(list.get(position).getMusicImage()).into(imgAvatarPlayMusic);
         txtNamePlayMusic.setText(list.get(position).getMusicName());
         txtSingerMusic.setText(list.get(position).getMusicSinger());
     }
 
-    private void updateTimeSong() {
-        final Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                SimpleDateFormat dinhdanggio = new SimpleDateFormat("mm:ss");
-                txtTimeRun.setText(dinhdanggio.format(mMediaPlayer.getCurrentPosition()));
-                seekBarPlayMusic.setProgress(mMediaPlayer.getCurrentPosition());
-                // kiểm tra thời gian của bài hát khi hết bài --->next
-                mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-                    @Override
-                    public void onCompletion(MediaPlayer mp) {
-                        position++;
-                        if (position > list.size() - 1) {
-                            position = 0;
-                        }
-                        if (mMediaPlayer.isPlaying()) {
-                            mMediaPlayer.stop();
-                        }
-                        initMediaPlayer(position);
-                        mMediaPlayer.start();
-                        btnPlayMusic.setImageResource(R.drawable.icon_pause);
-                        setTimetotal();
-                        updateTimeSong();
-
-                    }
-                });
-
-                handler.postDelayed(this, 500);
-
-            }
-        }, 100);
-    }
-
-    private void setTimetotal() {
+    private void setTimetotal(int duration) {
         SimpleDateFormat dinhDangPhut = new SimpleDateFormat("mm:ss");
-        txtTimeSum.setText(dinhDangPhut.format(mMediaPlayer.getDuration()));
-        seekBarPlayMusic.setMax(mMediaPlayer.getDuration());
+        txtTimeSum.setText(dinhDangPhut.format(duration));
+        seekBarPlayMusic.setMax(duration);
     }
 
     @Override
     public void onClickPrevious() {
         position--;
-        if (position < 0) {
-            position = list.size() - 1;
-        }
-        if (mMediaPlayer.isPlaying()) {
-            mMediaPlayer.stop();
-        }
+        Intent intentPreviousMusic = new Intent();
+        intentPreviousMusic.setAction(MyServicesMusic.CurrentTimeBroadcast.SEND_PREVIOUS_PLAY_MUSIC_ACTION);
+        intentPreviousMusic.putExtra(POSITION_PREVIOUS_MUSIC_PLAY, position);
+        LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentPreviousMusic);
         initMediaPlayer(position);
-        mMediaPlayer.start();
-        setTimetotal();
-        updateTimeSong();
     }
 
     @Override
     public void onClickPlay() {
-        if (mMediaPlayer.isPlaying()) {
-            mMediaPlayer.pause();
-            btnPlayMusic.setImageResource(R.drawable.icon_play);
-        } else {
-            mMediaPlayer.start();
-            btnPlayMusic.setImageResource(R.drawable.icon_pause);
-        }
-        updateTimeSong();
+        Intent intentPlayMusic = new Intent();
+        intentPlayMusic.setAction(MyServicesMusic.CurrentTimeBroadcast.SEND_PLAY_PLAY_MUSIC_ACTION);
+        intentPlayMusic.putExtra(POSITION_PLAY_MUSIC_PLAY, position);
+        LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentPlayMusic);
+        initMediaPlayer(position);
     }
 
     @Override
     public void onClickNext() {
         position++;
-        if (position > list.size() - 1) {
-            position = 0;
-        }
-        if (mMediaPlayer.isPlaying()) {
-            mMediaPlayer.stop();
-        }
+        Intent intentNextMusic = new Intent();
+        intentNextMusic.setAction(MyServicesMusic.CurrentTimeBroadcast.SEND_NEXT_PLAY_MUSIC_ACTION);
+        intentNextMusic.putExtra(POSITION_NEXT_MUSIC_PLAY, position);
+        LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentNextMusic);
         initMediaPlayer(position);
-        mMediaPlayer.start();
-        setTimetotal();
-        updateTimeSong();
+    }
+    public class MediaPlayerBroadcast extends BroadcastReceiver {
+        public static final String SEND_DURATION_MEDIAPLAYER = "duration_mediaPlayer";
+        public static final String SEND_CURRENT_MEDIAPLAYER = "current_mediaPlayer";
+        TakeMediaPlayer takeMediaPlayer;
+        public void setTakeMediaPlayer(TakeMediaPlayer takeMediaPlayer){
+            this.takeMediaPlayer = takeMediaPlayer;
+        }
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            switch (Objects.requireNonNull(intent.getAction())){
+                case SEND_DURATION_MEDIAPLAYER:
+                    int mediaDuration = intent.getIntExtra(MyServicesMusic.DURATION_KEY,0);
+                    Log.d(TAG, "onReceive: "+ mediaDuration);
+                    takeMediaPlayer.takeDuarationMediaPlayer(mediaDuration);
+                    break;
+                case SEND_CURRENT_MEDIAPLAYER:
+                    int current = intent.getIntExtra(MyServicesMusic.CURRENT_KEY,0);
+                    Log.d(TAG, "onReceive:current time** "+current);
+                    takeMediaPlayer.takeCurrentMediaPlayer(current);
+                    break;
+
+            }
+        }
+    }
+    interface TakeMediaPlayer{
+        void takeDuarationMediaPlayer(int dura);
+        void takeCurrentMediaPlayer(int current);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(mediaPlayerBroadcast);
     }
 }

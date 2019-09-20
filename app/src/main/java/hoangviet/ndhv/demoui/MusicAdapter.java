@@ -49,11 +49,11 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
         }
 
 
+
         musicViewHolder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                onClickItemMusicLitener.onclickNotifications(i);
-                onClickItemMusicLitener.onclickItem(i);
+                onClickItemMusicLitener.onclickItem(i,music);
             }
         });
 
@@ -84,10 +84,7 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
         }
     }
     interface onClickItemMusicLitener {
-        void onclickItem(int position);
-
-        void onclickNotifications(int position);
-
+        void onclickItem(int position,Music music);
         void onClickButtonPlay(Music music,int position);
     }
 }
