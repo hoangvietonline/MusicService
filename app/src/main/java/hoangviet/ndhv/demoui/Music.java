@@ -10,14 +10,20 @@ public class Music implements Parcelable {
     private int fileSong;
     private boolean isPlay;
 
-    public Music(String musicName, String musicSinger, String musicImage, int fileSong) {
+    Music(String musicName, String musicSinger, String musicImage, int fileSong) {
         this.musicName = musicName;
         this.musicSinger = musicSinger;
         this.musicImage = musicImage;
         this.fileSong = fileSong;
     }
 
-    public Music(String musicName, String musicSinger, String musicImage, boolean isPlay) {
+    Music(String musicName, String musicSinger, String musicImage) {
+        this.musicName = musicName;
+        this.musicSinger = musicSinger;
+        this.musicImage = musicImage;
+    }
+
+    Music(String musicName, String musicSinger, String musicImage, boolean isPlay) {
         this.musicName = musicName;
         this.musicSinger = musicSinger;
         this.musicImage = musicImage;
@@ -33,7 +39,7 @@ public class Music implements Parcelable {
     }
 
 
-    protected Music(Parcel in) {
+    private Music(Parcel in) {
         musicName = in.readString();
         musicSinger = in.readString();
         musicImage = in.readString();
@@ -52,6 +58,7 @@ public class Music implements Parcelable {
             return new Music[size];
         }
     };
+
 
     public boolean isPlay() {
         return isPlay;

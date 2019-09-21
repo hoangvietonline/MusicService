@@ -21,7 +21,7 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
     private LayoutInflater mLayoutInflater;
     private List<Music> musicList;
 
-    public MusicAdapter(onClickItemMusicLitener onClickItemMusicLitener, Context mContext, List<Music> musicList) {
+    MusicAdapter(onClickItemMusicLitener onClickItemMusicLitener, Context mContext, List<Music> musicList) {
         this.mContext = mContext;
         this.musicList = musicList;
         this.onClickItemMusicLitener = onClickItemMusicLitener;
@@ -69,13 +69,13 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
     public int getItemCount() {
         return musicList.size();
     }
-    public class MusicViewHolder extends RecyclerView.ViewHolder {
+    class MusicViewHolder extends RecyclerView.ViewHolder {
         private TextView txtMusicName;
         private TextView txtMusicSinger;
         private CircleImageView imgMusicAvatar;
         private ImageView btnPlay;
 
-        public MusicViewHolder(@NonNull View itemView) {
+        MusicViewHolder(@NonNull View itemView) {
             super(itemView);
             txtMusicName = itemView.findViewById(R.id.txtMusicName);
             txtMusicSinger = itemView.findViewById(R.id.txtMusicSinger);

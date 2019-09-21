@@ -16,10 +16,10 @@ public class Mp3Activity extends AppCompatActivity implements MusicAdapter.onCli
     public static final String POSITION_KEY = "position_key";
     public static final String BUNDLE_KEY = "bundle_key";
     public static final String MUSIC_KEY = "music_key";
+    public static final String POSITION_PLAY_MP3 = "position_play_mp3";
     private List<Music> musicList;
     private MusicAdapter adapter;
     private RecyclerView recyclerView;
-    private int oldPosition = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,7 +32,7 @@ public class Mp3Activity extends AppCompatActivity implements MusicAdapter.onCli
         recyclerView.setHasFixedSize(true);
         recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         recyclerView.setAdapter(adapter);
-        Intent intentService = new Intent(this, MyServicesMusic.class);
+        Intent intentService = new Intent(this, MyMusicServices.class);
         startService(intentService);
     }
 
@@ -53,7 +53,14 @@ public class Mp3Activity extends AppCompatActivity implements MusicAdapter.onCli
         bundle.putInt(POSITION_KEY, position);
         bundle.putParcelable(MUSIC_KEY,music);
         intent.putExtra(BUNDLE_KEY, bundle);
+
+
+        Intent intentPlayMusic = new Intent();
+        intentPlayMusic.setAction(MyMusicServices.CurrentTimeBroadcast.SEND_PLAY_MP3_ACTION);
+        intentPlayMusic.putExtra(POSITION_PLAY_MP3, position);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intentPlayMusic);
         startActivity(intent);
+
     }
 
 
@@ -71,11 +78,10 @@ public class Mp3Activity extends AppCompatActivity implements MusicAdapter.onCli
             }
         }
         Intent intent = new Intent();
-        intent.setAction(MyServicesMusic.CurrentTimeBroadcast.SEND_PLAY_ACTION);
+        intent.setAction(MyMusicServices.CurrentTimeBroadcast.SEND_PLAY_ACTION);
         intent.putExtra(POS_KEY, i);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
         adapter.notifyDataSetChanged();
-        oldPosition = i;
     }
 
     @Override
