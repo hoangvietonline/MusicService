@@ -63,6 +63,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="60dp"
         android:background="@null"
+        android:contentDescription="@null"
         android:padding="10dp"
         android:src="@drawable/icon_play"
         app:layout_constraintEnd_toEndOf="parent"
@@ -75,6 +76,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="@null"
+        android:contentDescription="@null"
         android:padding="10dp"
         android:src="@drawable/icon_previous"
         app:layout_constraintEnd_toStartOf="@+id/btnPlayPlayMusic"
@@ -88,6 +90,7 @@
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
         android:background="@null"
+        android:contentDescription="@null"
         android:padding="10dp"
         android:src="@drawable/icon_next"
         app:layout_constraintBottom_toBottomOf="@+id/btnPlayPlayMusic"
@@ -102,6 +105,7 @@
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="8dp"
         android:background="@null"
+        android:contentDescription="@null"
         android:src="@drawable/ic_repeat"
         app:layout_constraintBottom_toTopOf="@+id/txtTimeSum"
         app:layout_constraintEnd_toEndOf="parent" />
@@ -113,6 +117,7 @@
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="8dp"
         android:background="@null"
+        android:contentDescription="@null"
         android:src="@drawable/icon_shuffle"
         app:layout_constraintBottom_toTopOf="@+id/btnRepeatPlayMusic"
         app:layout_constraintEnd_toEndOf="parent" />
@@ -120,16 +125,16 @@
     <TextView
         android:id="@+id/txtTimeRun"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="00:00"
+        android:layout_height="15dp"
         app:layout_constraintBottom_toTopOf="@+id/seeBarPlayMusic"
-        app:layout_constraintStart_toStartOf="@+id/seeBarPlayMusic" />
+        app:layout_constraintStart_toStartOf="@+id/seeBarPlayMusic"
+        tools:text="00:00" />
 
     <TextView
         android:id="@+id/txtTimeSum"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="00:00"
         app:layout_constraintBottom_toTopOf="@+id/seeBarPlayMusic"
-        app:layout_constraintEnd_toEndOf="@+id/seeBarPlayMusic" />
+        app:layout_constraintEnd_toEndOf="@+id/seeBarPlayMusic"
+        tools:text="00:00" />
 </android.support.constraint.ConstraintLayout>

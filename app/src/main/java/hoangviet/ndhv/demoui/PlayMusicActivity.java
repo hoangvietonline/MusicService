@@ -8,6 +8,7 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
@@ -25,12 +26,12 @@ import java.util.Objects;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
-
 public class PlayMusicActivity extends AppCompatActivity implements BroadcastMusic.OnclickNotifyBroadcast {
     public static final String POSITION_PREVIOUS_MUSIC_PLAY = "position_previous_music_play";
     public static final String POSITION_PLAY_MUSIC_PLAY = "position_play_music_play";
     public static final String POSITION_NEXT_MUSIC_PLAY = "position_next_music_play";
     public static final String SEEKBAR_PLAY_MUSIC = "seekBar_play_music";
+    public static final String POSITION_RESULTS = "position_results";
     private static final String TAG = "PlayMusicActivity";
     private CircleImageView imgAvatarPlayMusic;
     private TextView txtNamePlayMusic, txtSingerMusic, txtTimeRun, txtTimeSum;
@@ -42,11 +43,14 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
     private MediaPlayerBroadcast mediaPlayerBroadcast;
     private Animation animation;
 
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d(TAG, "onCreate: ");
         setContentView(R.layout.activity_play_music);
-        animation = AnimationUtils.loadAnimation(this,R.anim.round_image);
+        animation = AnimationUtils.loadAnimation(this, R.anim.round_image);
         BroadcastMusic broadcastMusic = new BroadcastMusic();
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(BroadcastMusic.BUTTON_PREVIOUS);
@@ -67,7 +71,7 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
             //function run time : 100/1000
             @Override
             public void takeCurrentMediaPlayer(final int current, int duration) {
-                SimpleDateFormat formatMinute = new SimpleDateFormat("mm:ss");
+                @SuppressLint("SimpleDateFormat") SimpleDateFormat formatMinute = new SimpleDateFormat("mm:ss");
                 txtTimeRun.setText(formatMinute.format(current));
                 seekBarPlayMusic.setProgress(current);
                 setTimetotal(duration);
@@ -81,8 +85,15 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
                 if (position > list.size() - 1) {
                     position = 0;
                 }
+                music = list.get(position);
+                music.setPlay(true);
+                btnPlayMusic.setImageResource(R.drawable.icon_pause);
+                for (int i = 0; i < list.size(); i++) {
+                    if (i != position) {
+                        list.get(i).setPlay(false);
+                    }
+                }
             }
-
         });
         bind();
         list = new ArrayList<>();
@@ -91,19 +102,16 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         final Bundle bundle = intent.getBundleExtra(Mp3Activity.BUNDLE_KEY);
         if (bundle != null) {
             position = bundle.getInt(Mp3Activity.POSITION_KEY);
-            music = bundle.getParcelable(Mp3Activity.MUSIC_KEY);
+            music = list.get(position);
             music.setPlay(true);
-        }
-
-
-        if (music.isPlay() == true) {
             btnPlayMusic.setImageResource(R.drawable.icon_pause);
-            music.setPlay(false);
-
-        } else {
-            btnPlayMusic.setImageResource(R.drawable.icon_play);
+        }else {
+            Bundle bundleNotify = getIntent().getExtras();
+            position = bundleNotify != null ? bundleNotify.getInt(MyMusicServices.SERVICE_POSITION_NOTIFICATION) : 0;
+            Log.d(TAG, "onCreate: postition  " +position);
+            music = list.get(position);
             music.setPlay(true);
-
+            btnPlayMusic.setImageResource(R.drawable.icon_pause);
         }
 
         initMediaPlayer(position);
@@ -133,6 +141,15 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
                 intentPreviousMusic.putExtra(POSITION_PREVIOUS_MUSIC_PLAY, position);
                 LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentPreviousMusic);
                 initMediaPlayer(position);
+
+                music = list.get(position);
+                music.setPlay(true);
+                btnPlayMusic.setImageResource(R.drawable.icon_pause);
+                for (int i = 0; i < list.size(); i++) {
+                    if (i != position) {
+                        list.get(i).setPlay(false);
+                    }
+                }
             }
         });
         btnNextMusic.setOnClickListener(new View.OnClickListener() {
@@ -147,6 +164,15 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
                 intentNextMusic.putExtra(POSITION_NEXT_MUSIC_PLAY, position);
                 LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentNextMusic);
                 initMediaPlayer(position);
+
+                music = list.get(position);
+                music.setPlay(true);
+                btnPlayMusic.setImageResource(R.drawable.icon_pause);
+                for (int i = 0; i < list.size(); i++) {
+                    if (i != position) {
+                        list.get(i).setPlay(false);
+                    }
+                }
             }
         });
 
@@ -157,12 +183,15 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
                 intentPlayMusic.setAction(MyMusicServices.CurrentTimeBroadcast.SEND_PLAY_PLAY_MUSIC_ACTION);
                 intentPlayMusic.putExtra(POSITION_PLAY_MUSIC_PLAY, position);
                 LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentPlayMusic);
-                if (music.isPlay() == true) {
-                    btnPlayMusic.setImageResource(R.drawable.icon_pause);
-                    music.setPlay(false);
-                } else {
-                    btnPlayMusic.setImageResource(R.drawable.icon_play);
-                    music.setPlay(true);
+                music = list.get(position);
+                if (music != null) {
+                    if (music.isPlay()) {
+                        btnPlayMusic.setImageResource(R.drawable.icon_play);
+                        music.setPlay(false);
+                    } else {
+                        btnPlayMusic.setImageResource(R.drawable.icon_pause);
+                        music.setPlay(true);
+                    }
                 }
             }
         });
@@ -185,7 +214,6 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
                 intentSeekBar.setAction(MyMusicServices.CurrentTimeBroadcast.SEND_SEEKBAR_MUSIC_ACTION);
                 intentSeekBar.putExtra(SEEKBAR_PLAY_MUSIC, seekBarChange);
                 LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intentSeekBar);
-
             }
         });
     }
@@ -205,11 +233,11 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
     }
 
     private void addMusic() {
-        list.add(new Music("Bạc Phận", "K-ICM ft. JACK", "https://sinhnhathot.com/uploads/celebrities/a692feab60b1f53d821150a87fafea46.png"));
+        list.add(new Music("Bạc Phận", "K-ICM ft. JACK", "https://cdn.tuoitre.vn/thumb_w/640/2019/6/19/jack-1560931851558668237008.jpg"));
         list.add(new Music("Đừng nói tôi điên", "Hiền Hồ", "https://vcdn-ione.vnecdn.net/2018/12/13/43623062-928967060639978-82410-4074-2366-1544693013.png"));
         list.add(new Music("Em ngày xưa khác rồi", "Hiền Hồ", "https://vcdn-ione.vnecdn.net/2018/12/13/43623062-928967060639978-82410-4074-2366-1544693013.png"));
         list.add(new Music("Hồng Nhan", "Jack", "https://kenh14cdn.com/zoom/700_438/2019/4/16/520385336113309193300413143308017856937984n-15554316885891494708426-crop-15554316943631888232929.jpg"));
-        list.add(new Music("Mây và núi", "The Bells", "https://photo-resize-zmp3.zadn.vn/w240_r1x1_jpeg/covers/7/6/764f16e%E2%80%A6_1286532325.jpg"));
+        list.add(new Music("Mây và núi", "The Bells", "https://www.pngkey.com/png/detail/129-1296419_cartoon-mountains-png-mountain-animation-png.png"));
         list.add(new Music("Rồi người thương cũng hóa người dưng", "Hiền Hồ", "https://vcdn-ione.vnecdn.net/2018/12/13/43623062-928967060639978-82410-4074-2366-1544693013.png"));
     }
 
@@ -237,6 +265,12 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         intentPreviousMusic.putExtra(POSITION_PREVIOUS_MUSIC_PLAY, position);
         LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentPreviousMusic);
         initMediaPlayer(position);
+        btnPlayMusic.setImageResource(R.drawable.icon_pause);
+        for (int i = 0; i < list.size(); i++) {
+            if (i != position) {
+                list.get(i).setPlay(false);
+            }
+        }
     }
 
     @Override
@@ -246,6 +280,17 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         intentPlayMusic.putExtra(POSITION_PLAY_MUSIC_PLAY, position);
         LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentPlayMusic);
         initMediaPlayer(position);
+        music = list.get(position);
+        if (music != null) {
+            if (music.isPlay()) {
+                btnPlayMusic.setImageResource(R.drawable.icon_play);
+                music.setPlay(false);
+            } else {
+                btnPlayMusic.setImageResource(R.drawable.icon_pause);
+                music.setPlay(true);
+            }
+        }
+
     }
 
     @Override
@@ -259,12 +304,30 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         intentNextMusic.putExtra(POSITION_NEXT_MUSIC_PLAY, position);
         LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentNextMusic);
         initMediaPlayer(position);
+        music = list.get(position);
+        music.setPlay(true);
+        btnPlayMusic.setImageResource(R.drawable.icon_pause);
+        for (int i = 0; i < list.size(); i++) {
+            if (i != position) {
+                list.get(i).setPlay(false);
+            }
+        }
     }
 
     @Override
     protected void onStop() {
+        Log.d(TAG, "onStop: ");
         super.onStop();
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(mediaPlayerBroadcast);
+    }
+
+    @Override
+    public void onBackPressed() {
+        Intent intentMp3 = new Intent();
+        intentMp3.putExtra(POSITION_RESULTS, position);
+        setResult(Mp3Activity.RESULT_OK, intentMp3);
+        finish();
+        super.onBackPressed();
+
     }
 
     interface TakeMediaPlayer {
@@ -299,4 +362,65 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
             }
         }
     }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Log.d(TAG, "onStart: ");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d(TAG, "onResume: ");
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.d(TAG, "onPause: ");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.d(TAG, "onDestroy: ");
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(mediaPlayerBroadcast);
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        mediaPlayerBroadcast.setTakeMediaPlayer(new TakeMediaPlayer() {
+
+            //function run time : 100/1000
+            @Override
+            public void takeCurrentMediaPlayer(final int current, int duration) {
+                @SuppressLint("SimpleDateFormat") SimpleDateFormat formatMinute = new SimpleDateFormat("mm:ss");
+                txtTimeRun.setText(formatMinute.format(current));
+                seekBarPlayMusic.setProgress(current);
+                setTimetotal(duration);
+            }
+
+            @Override
+            public void playMusicAgain(int positionMusic, int duration) {
+                initMediaPlayer(positionMusic);
+                setTimetotal(duration);
+                position++;
+                if (position > list.size() - 1) {
+                    position = 0;
+                }
+                music = list.get(position);
+                music.setPlay(true);
+                btnPlayMusic.setImageResource(R.drawable.icon_pause);
+                for (int i = 0; i < list.size(); i++) {
+                    if (i != position) {
+                        list.get(i).setPlay(false);
+                    }
+                }
+            }
+        });
+        Log.d(TAG, "onRestart: ");
+    }
+
 }

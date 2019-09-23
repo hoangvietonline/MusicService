@@ -1,6 +1,7 @@
 package hoangviet.ndhv.demoui;
 
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
@@ -36,13 +37,13 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
     }
 
     @Override
-    public void onBindViewHolder(@NonNull final MusicViewHolder musicViewHolder, final int i) {
+    public void onBindViewHolder(@NonNull final MusicViewHolder musicViewHolder, @SuppressLint("RecyclerView") final int i) {
         final Music music = musicList.get(i);
         musicViewHolder.txtMusicName.setText(music.getMusicName());
         musicViewHolder.txtMusicSinger.setText(music.getMusicSinger());
         Glide.with(mContext).load(music.getMusicImage()).into(musicViewHolder.imgMusicAvatar);
 
-        if (musicList.get(i).isPlay() == true) {
+        if (musicList.get(i).isPlay()) {
             musicViewHolder.btnPlay.setImageResource(R.drawable.icon_pause);
         } else {
             musicViewHolder.btnPlay.setImageResource(R.drawable.icon_play);

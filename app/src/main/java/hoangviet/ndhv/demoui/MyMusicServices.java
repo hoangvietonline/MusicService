@@ -9,16 +9,27 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
-import android.util.Log;
 import android.widget.RemoteViews;
 import android.widget.Toast;
+
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +41,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
     public static final String CURRENT_KEY = "current_key";
     public static final String POSITION_MUSIC_PLAY_KEY = "position_music_play_key";
     public static final String DURATION_MUSIC_AGAIN = "duration_music_again";
+    public static final String SERVICE_POSITION_NOTIFICATION = "service_position_notification";
     private static final String TAG = "MyMusicServices";
     private static final String CHANNEL_ID = "channel_id";
     public static MediaPlayer mMediaPlayer;
@@ -37,9 +49,47 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
     private int position = 0;
     private List<Music> musicList;
     private CurrentTimeBroadcast broadcast;
+    private RemoteViews notificationLayout;
 
     public MyMusicServices() {
 
+    }
+
+    public static Bitmap getCircleBitmap(Bitmap bitmap) {
+        Bitmap output;
+        Bitmap tmp;
+        Rect srcRect, dstRect;
+        float r = 50;
+        final int width = bitmap.getWidth();
+        final int height = bitmap.getHeight();
+
+        output = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
+        if (width > height) {
+            tmp = Bitmap.createScaledBitmap(bitmap, 100 * width / height, 100, false);
+            int left = (tmp.getWidth() - tmp.getHeight()) / 2;
+            int right = left + tmp.getHeight();
+            srcRect = new Rect(left, 0, right, tmp.getHeight());
+            dstRect = new Rect(0, 0, tmp.getHeight(),tmp.getHeight());
+        } else {
+            tmp = Bitmap.createScaledBitmap(bitmap, 100, 100 * height / width, false);
+            int top = (tmp.getHeight() - tmp.getWidth()) / 2;
+            int bottom = top + tmp.getWidth();
+            srcRect = new Rect(0, top, tmp.getWidth(), bottom);
+            dstRect = new Rect(0, 0,  tmp.getWidth(),  tmp.getWidth());
+        }
+
+        Canvas canvas = new Canvas(output);
+
+        final int color = 0xff424242;
+        final Paint paint = new Paint();
+
+        paint.setAntiAlias(true);
+        canvas.drawARGB(0, 0, 0, 0);
+        paint.setColor(color);
+        canvas.drawCircle(r, r, r, paint);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(tmp, srcRect, dstRect, paint);
+        return output;
     }
 
     @Nullable
@@ -57,9 +107,6 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
 
     @Override
     public int onStartCommand(final Intent intent, final int flags, int startId) {
-        int i = intent.getIntExtra(Mp3Activity.SERVICES_KEY, 0);
-        initNotifyMusic(i);
-
         broadcast = new CurrentTimeBroadcast();
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(CurrentTimeBroadcast.SEND_PLAY_ACTION);
@@ -92,6 +139,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                 }
                 oldPossition = position;
                 mediaPlayerCurrentTime();
+                initNotifyMusic(position);
             }
 
             @Override
@@ -110,7 +158,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                     mMediaPlayer.start();
                 }
                 mediaPlayerCurrentTime();
-
+                initNotifyMusic(position);
             }
 
             @Override
@@ -129,6 +177,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                     mMediaPlayer.start();
                 }
                 mediaPlayerCurrentTime();
+                initNotifyMusic(position);
             }
 
             @Override
@@ -144,6 +193,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                     mMediaPlayer.start();
                 }
                 mediaPlayerCurrentTime();
+                initNotifyMusic(position);
             }
 
             @Override
@@ -152,11 +202,20 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
             }
 
             @Override
-            public void onClickPlayMp3(int postion) {
-                if (mMediaPlayer == null){
-                    mMediaPlayer = MediaPlayer.create(getApplicationContext(),musicList.get(postion).getFileSong());
+            public void onClickPlayMp3(int position) {
+                if (mMediaPlayer != null) {
+                    if (oldPossition != position) {
+                        stopMusic();
+                        mMediaPlayer = MediaPlayer.create(getApplicationContext(), musicList.get(position).getFileSong());
+                        mMediaPlayer.start();
+                    }
+
+                } else {
+                    mMediaPlayer = MediaPlayer.create(getApplicationContext(), musicList.get(position).getFileSong());
                     mMediaPlayer.start();
                 }
+                oldPossition = position;
+                initNotifyMusic(position);
                 mediaPlayerCurrentTime();
             }
         });
@@ -204,6 +263,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                         intentPositionPlayMusic.putExtra(POSITION_MUSIC_PLAY_KEY, position);
                         intentPositionPlayMusic.putExtra(DURATION_MUSIC_AGAIN, durationMediaPlayer);
                         LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intentPositionPlayMusic);
+                        initNotifyMusic(position);
                     }
                 });
 
@@ -228,43 +288,65 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
     }
 
     private void initNotifyMusic(int position) {
-        String image = musicList.get(position).getMusicImage();
-        Log.d(TAG, "initNotifyMusic:ádass " + image);
-
         createNotificationChannel();
-        RemoteViews notificationLayout = new RemoteViews(getPackageName(), R.layout.custum_notifymusic);
+        notificationLayout = new RemoteViews(getPackageName(), R.layout.custum_notifymusic);
         notificationLayout.setTextViewText(R.id.txtMusicNameNotify, musicList.get(position).getMusicName());
         notificationLayout.setTextViewText(R.id.txtSingerNotify, musicList.get(position).getMusicSinger());
-        Intent intent = new Intent(this, PlayMusicActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
+        if (mMediaPlayer != null) {
+            if (mMediaPlayer.isPlaying()) {
+                notificationLayout.setImageViewResource(R.id.btnPlayNotify, R.drawable.icon_pause);
+            } else {
+                notificationLayout.setImageViewResource(R.id.btnPlayNotify, R.drawable.icon_play);
+            }
+        }
+        Intent intent = new Intent(getApplicationContext(), PlayMusicActivity.class);
+        intent.putExtra(SERVICE_POSITION_NOTIFICATION, position);
+        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(), 0, intent, PendingIntent.FLAG_CANCEL_CURRENT);
 
         Intent intentPrevious = new Intent(BroadcastMusic.BUTTON_PREVIOUS);
-        PendingIntent pendingIntentPrevious = PendingIntent.getBroadcast(this, 1, intentPrevious, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pendingIntentPrevious = PendingIntent.getBroadcast(this, 1, intentPrevious, PendingIntent.FLAG_NO_CREATE);
         Intent intentPlay = new Intent(BroadcastMusic.BUTTON_PLAY);
-        PendingIntent pendingIntentPlay = PendingIntent.getBroadcast(this, 2, intentPlay, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pendingIntentPlay = PendingIntent.getBroadcast(this, 2, intentPlay, PendingIntent.FLAG_NO_CREATE);
         Intent intentNext = new Intent(BroadcastMusic.BUTTON_NEXT);
-        PendingIntent pendingIntentNext = PendingIntent.getBroadcast(this, 3, intentNext, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pendingIntentNext = PendingIntent.getBroadcast(this, 3, intentNext, PendingIntent.FLAG_NO_CREATE);
 
         Notification builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.icon_music)
                 .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
                 .setCustomContentView(notificationLayout)
                 .setContentIntent(pendingIntent)
-                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .build();
 
         notificationLayout.setOnClickPendingIntent(R.id.btnPreviousNotify, pendingIntentPrevious);
         notificationLayout.setOnClickPendingIntent(R.id.btnPlayNotify, pendingIntentPlay);
         notificationLayout.setOnClickPendingIntent(R.id.btnNextNotify, pendingIntentNext);
+        Glide.with(this)
+                .asBitmap()
+                .load(musicList.get(position).getMusicImage())
+                .into(new CustomTarget<Bitmap>() {
+                    @Override
+                    public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
+                        notificationLayout.setImageViewBitmap(R.id.imgAvatarNotify, getCircleBitmap(resource));
+                    }
+
+                    @Override
+                    public void onLoadCleared(@Nullable Drawable placeholder) {
+
+                    }
+                });
         startForeground(1, builder);
+
+
     }
 
     private void addMusic() {
-        musicList.add(new Music("Bạc Phận", "K-ICM ft. JACK", "https://sinhnhathot.com/uploads/celebrities/a692feab60b1f53d821150a87fafea46.png", R.raw.bac_phan));
+        musicList.add(new Music("Bạc Phận", "K-ICM ft. JACK", "https://cdn.tuoitre.vn/thumb_w/640/2019/6/19/jack-1560931851558668237008.jpg", R.raw.bac_phan));
         musicList.add(new Music("Đừng nói tôi điên", "Hiền Hồ", "https://vcdn-ione.vnecdn.net/2018/12/13/43623062-928967060639978-82410-4074-2366-1544693013.png", R.raw.dung_noi_toi_dien));
         musicList.add(new Music("Em ngày xưa khác rồi", "Hiền Hồ", "https://vcdn-ione.vnecdn.net/2018/12/13/43623062-928967060639978-82410-4074-2366-1544693013.png", R.raw.em_ngay_xua_khac_roi));
         musicList.add(new Music("Hồng Nhan", "Jack", "https://kenh14cdn.com/zoom/700_438/2019/4/16/520385336113309193300413143308017856937984n-15554316885891494708426-crop-15554316943631888232929.jpg", R.raw.hong_nhan_jack));
-        musicList.add(new Music("Mây và núi", "The Bells", "https://photo-resize-zmp3.zadn.vn/w240_r1x1_jpeg/covers/7/6/764f16e%E2%80%A6_1286532325.jpg", R.raw.may_va_nui));
+        musicList.add(new Music("Mây và núi", "The Bells", "https://www.pngkey.com/png/detail/129-1296419_cartoon-mountains-png-mountain-animation-png.png", R.raw.may_va_nui));
         musicList.add(new Music("Rồi người thương cũng hóa người dưng", "Hiền Hồ", "https://vcdn-ione.vnecdn.net/2018/12/13/43623062-928967060639978-82410-4074-2366-1544693013.png", R.raw.roi_nguoi_thuong_cung_hoa_nguoi_dung));
     }
 
@@ -317,7 +399,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
 
         void seekBarChange(int seekBarChange);
 
-        void onClickPlayMp3(int postion);
+        void onClickPlayMp3(int position);
 
 
     }
@@ -360,7 +442,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                     listener.seekBarChange(seekbarChange);
                     break;
                 case SEND_PLAY_MP3_ACTION:
-                    int positionMp3 = intent.getIntExtra(Mp3Activity.POSITION_PLAY_MP3,0);
+                    int positionMp3 = intent.getIntExtra(Mp3Activity.POSITION_PLAY_MP3, 0);
                     listener.onClickPlayMp3(positionMp3);
                     break;
             }
