@@ -52,7 +52,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
     public static MediaPlayer mMediaPlayer;
     private int oldPossition = 0;
     private int position = 0;
-    private String repeatOne;
+    private String repeatOne = "";
     private List<Music> musicList;
     private CurrentTimeBroadcast broadcast;
     private RemoteViews notificationLayout;
@@ -124,6 +124,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
         intentFilter.addAction(CurrentTimeBroadcast.SEND_SHUFFLE_MUSIC_ACTION);
         intentFilter.addAction(CurrentTimeBroadcast.SEND_REPEAT_ONE_ACTION);
         intentFilter.addAction(CurrentTimeBroadcast.SEND_UN_SHUFFLE_MUSIC_ACTION);
+        intentFilter.addAction(CurrentTimeBroadcast.SEND_REPEAT_PLAY_MUSIC_ACTION);
         LocalBroadcastManager.getInstance(this).registerReceiver(broadcast, intentFilter);
 
         broadcast.setListener(new onClickBroadcast() {
@@ -265,7 +266,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
 
             @Override
             public void repeatPlayMusic() {
-                repeatOne = null;
+                repeatOne = "";
             }
 
 
@@ -299,7 +300,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                 mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                     @Override
                     public void onCompletion(MediaPlayer mp) {
-                        if (repeatOne != null) {
+                        if (repeatOne.equals("OKE")) {
                             mMediaPlayer = MediaPlayer.create(getApplicationContext(), musicList.get(position).getFileSong());
                             Log.d(TAG, "onCompletion: position media " + position);
                             mMediaPlayer.start();
