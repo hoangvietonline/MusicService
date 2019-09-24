@@ -20,10 +20,12 @@ import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 import android.widget.RemoteViews;
 import android.widget.Toast;
 
@@ -32,6 +34,7 @@ import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -42,11 +45,14 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
     public static final String POSITION_MUSIC_PLAY_KEY = "position_music_play_key";
     public static final String DURATION_MUSIC_AGAIN = "duration_music_again";
     public static final String SERVICE_POSITION_NOTIFICATION = "service_position_notification";
+    public static final String MUSIC_LIST_SHUFFLE = "music_list_shuffle";
+    public static final String MUSIC_LIST_UNSHUFFLE = "music_list_repeat";
     private static final String TAG = "MyMusicServices";
     private static final String CHANNEL_ID = "channel_id";
     public static MediaPlayer mMediaPlayer;
     private int oldPossition = 0;
     private int position = 0;
+    private String repeatOne;
     private List<Music> musicList;
     private CurrentTimeBroadcast broadcast;
     private RemoteViews notificationLayout;
@@ -69,13 +75,13 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
             int left = (tmp.getWidth() - tmp.getHeight()) / 2;
             int right = left + tmp.getHeight();
             srcRect = new Rect(left, 0, right, tmp.getHeight());
-            dstRect = new Rect(0, 0, tmp.getHeight(),tmp.getHeight());
+            dstRect = new Rect(0, 0, tmp.getHeight(), tmp.getHeight());
         } else {
             tmp = Bitmap.createScaledBitmap(bitmap, 100, 100 * height / width, false);
             int top = (tmp.getHeight() - tmp.getWidth()) / 2;
             int bottom = top + tmp.getWidth();
             srcRect = new Rect(0, top, tmp.getWidth(), bottom);
-            dstRect = new Rect(0, 0,  tmp.getWidth(),  tmp.getWidth());
+            dstRect = new Rect(0, 0, tmp.getWidth(), tmp.getWidth());
         }
 
         Canvas canvas = new Canvas(output);
@@ -115,6 +121,9 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
         intentFilter.addAction(CurrentTimeBroadcast.SEND_PLAY_PLAY_MUSIC_ACTION);
         intentFilter.addAction(CurrentTimeBroadcast.SEND_SEEKBAR_MUSIC_ACTION);
         intentFilter.addAction(CurrentTimeBroadcast.SEND_PLAY_MP3_ACTION);
+        intentFilter.addAction(CurrentTimeBroadcast.SEND_SHUFFLE_MUSIC_ACTION);
+        intentFilter.addAction(CurrentTimeBroadcast.SEND_REPEAT_ONE_ACTION);
+        intentFilter.addAction(CurrentTimeBroadcast.SEND_UN_SHUFFLE_MUSIC_ACTION);
         LocalBroadcastManager.getInstance(this).registerReceiver(broadcast, intentFilter);
 
         broadcast.setListener(new onClickBroadcast() {
@@ -138,6 +147,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                     mMediaPlayer.start();
                 }
                 oldPossition = position;
+                MyMusicServices.this.position = position;
                 mediaPlayerCurrentTime();
                 initNotifyMusic(position);
             }
@@ -157,6 +167,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                     mMediaPlayer = MediaPlayer.create(getApplicationContext(), musicList.get(position).getFileSong());
                     mMediaPlayer.start();
                 }
+                MyMusicServices.this.position = position;
                 mediaPlayerCurrentTime();
                 initNotifyMusic(position);
             }
@@ -177,7 +188,10 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                     mMediaPlayer.start();
                 }
                 mediaPlayerCurrentTime();
+                MyMusicServices.this.position = position;
+                Log.d(TAG, "onClickNextMusic:next music " + position);
                 initNotifyMusic(position);
+
             }
 
             @Override
@@ -192,6 +206,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                     mMediaPlayer = MediaPlayer.create(getApplicationContext(), musicList.get(position).getFileSong());
                     mMediaPlayer.start();
                 }
+                MyMusicServices.this.position = position;
                 mediaPlayerCurrentTime();
                 initNotifyMusic(position);
             }
@@ -215,9 +230,45 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                     mMediaPlayer.start();
                 }
                 oldPossition = position;
+                MyMusicServices.this.position = position;
                 initNotifyMusic(position);
                 mediaPlayerCurrentTime();
             }
+
+            @Override
+            public void shufflePlayMusic() {
+                Collections.shuffle(musicList);
+                Intent intentMusicShuffle = new Intent();
+                intentMusicShuffle.setAction(PlayMusicActivity.MediaPlayerBroadcast.SEND_MUSIC_SHUFFLE_PLAY_MUSIC);
+                intentMusicShuffle.putParcelableArrayListExtra(MUSIC_LIST_SHUFFLE, (ArrayList<? extends Parcelable>) musicList);
+                LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intentMusicShuffle);
+            }
+
+            @Override
+            public void repeatOnePlayMusic(String oke, int pos) {
+                repeatOne = oke;
+                Log.d(TAG, "repeatOnePlayMusic: repeat one " + repeatOne);
+                position = pos;
+                Log.d(TAG, "repeatOnePlayMusic: repeatone position " + position);
+            }
+
+            @Override
+            public void unShufflePlayMusic() {
+                musicList = new ArrayList<>();
+                addMusic();
+                Log.d(TAG, "unShufflePlayMusic:musicList "+musicList.size());
+                Intent intentMusicRepeat = new Intent();
+                intentMusicRepeat.setAction(PlayMusicActivity.MediaPlayerBroadcast.SEND_UN_SHUFFLE_PLAY_MUSIC);
+                intentMusicRepeat.putParcelableArrayListExtra(MUSIC_LIST_UNSHUFFLE, (ArrayList<? extends Parcelable>) musicList);
+                LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intentMusicRepeat);
+            }
+
+            @Override
+            public void repeatPlayMusic() {
+                repeatOne = null;
+            }
+
+
         });
         return START_NOT_STICKY;
     }
@@ -248,22 +299,35 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                 mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                     @Override
                     public void onCompletion(MediaPlayer mp) {
-                        position++;
-                        if (position > musicList.size() - 1) {
-                            position = 0;
+                        if (repeatOne != null) {
+                            mMediaPlayer = MediaPlayer.create(getApplicationContext(), musicList.get(position).getFileSong());
+                            Log.d(TAG, "onCompletion: position media " + position);
+                            mMediaPlayer.start();
+                            int durationMediaPlayer = mMediaPlayer.getDuration();
+                            Intent intentPositionPlayMusic = new Intent();
+                            intentPositionPlayMusic.setAction(PlayMusicActivity.MediaPlayerBroadcast.SEND_POSITION_PLAY_MUSIC);
+                            intentPositionPlayMusic.putExtra(POSITION_MUSIC_PLAY_KEY, position);
+                            intentPositionPlayMusic.putExtra(DURATION_MUSIC_AGAIN, durationMediaPlayer);
+                            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intentPositionPlayMusic);
+                            initNotifyMusic(position);
+                        } else {
+                            position++;
+                            if (position > musicList.size() - 1) {
+                                position = 0;
+                            }
+                            if (mMediaPlayer.isPlaying()) {
+                                mMediaPlayer.stop();
+                            }
+                            mMediaPlayer = MediaPlayer.create(getApplicationContext(), musicList.get(position).getFileSong());
+                            mMediaPlayer.start();
+                            int durationMediaPlayer = mMediaPlayer.getDuration();
+                            Intent intentPositionPlayMusic = new Intent();
+                            intentPositionPlayMusic.setAction(PlayMusicActivity.MediaPlayerBroadcast.SEND_POSITION_PLAY_MUSIC);
+                            intentPositionPlayMusic.putExtra(POSITION_MUSIC_PLAY_KEY, position);
+                            intentPositionPlayMusic.putExtra(DURATION_MUSIC_AGAIN, durationMediaPlayer);
+                            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intentPositionPlayMusic);
+                            initNotifyMusic(position);
                         }
-                        if (mMediaPlayer.isPlaying()) {
-                            mMediaPlayer.stop();
-                        }
-                        mMediaPlayer = MediaPlayer.create(getApplicationContext(), musicList.get(position).getFileSong());
-                        mMediaPlayer.start();
-                        int durationMediaPlayer = mMediaPlayer.getDuration();
-                        Intent intentPositionPlayMusic = new Intent();
-                        intentPositionPlayMusic.setAction(PlayMusicActivity.MediaPlayerBroadcast.SEND_POSITION_PLAY_MUSIC);
-                        intentPositionPlayMusic.putExtra(POSITION_MUSIC_PLAY_KEY, position);
-                        intentPositionPlayMusic.putExtra(DURATION_MUSIC_AGAIN, durationMediaPlayer);
-                        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intentPositionPlayMusic);
-                        initNotifyMusic(position);
                     }
                 });
 
@@ -305,11 +369,11 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
         PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(), 0, intent, PendingIntent.FLAG_CANCEL_CURRENT);
 
         Intent intentPrevious = new Intent(BroadcastMusic.BUTTON_PREVIOUS);
-        PendingIntent pendingIntentPrevious = PendingIntent.getBroadcast(this, 1, intentPrevious, PendingIntent.FLAG_NO_CREATE);
+        PendingIntent pendingIntentPrevious = PendingIntent.getBroadcast(this, 1, intentPrevious, PendingIntent.FLAG_CANCEL_CURRENT);
         Intent intentPlay = new Intent(BroadcastMusic.BUTTON_PLAY);
-        PendingIntent pendingIntentPlay = PendingIntent.getBroadcast(this, 2, intentPlay, PendingIntent.FLAG_NO_CREATE);
+        PendingIntent pendingIntentPlay = PendingIntent.getBroadcast(this, 2, intentPlay, PendingIntent.FLAG_CANCEL_CURRENT);
         Intent intentNext = new Intent(BroadcastMusic.BUTTON_NEXT);
-        PendingIntent pendingIntentNext = PendingIntent.getBroadcast(this, 3, intentNext, PendingIntent.FLAG_NO_CREATE);
+        PendingIntent pendingIntentNext = PendingIntent.getBroadcast(this, 3, intentNext, PendingIntent.FLAG_CANCEL_CURRENT);
 
         Notification builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.icon_music)
@@ -401,7 +465,13 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
 
         void onClickPlayMp3(int position);
 
+        void shufflePlayMusic();
 
+        void repeatOnePlayMusic(String oke, int position);
+
+        void unShufflePlayMusic();
+
+        void repeatPlayMusic();
     }
 
     static class CurrentTimeBroadcast extends BroadcastReceiver {
@@ -412,6 +482,10 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
         public static final String SEND_PLAY_PLAY_MUSIC_ACTION = "play_play_music_action";
         public static final String SEND_SEEKBAR_MUSIC_ACTION = "seeBar_music_action";
         public static final String SEND_PLAY_MP3_ACTION = "send_play_mp3_action";
+        public static final String SEND_SHUFFLE_MUSIC_ACTION = "send_shuffle_music_action";
+        public static final String SEND_REPEAT_ONE_ACTION = "send_repeat_one_action";
+        public static final String SEND_UN_SHUFFLE_MUSIC_ACTION = "send_repeat_music_action";
+        public static final String SEND_REPEAT_PLAY_MUSIC_ACTION = "send_repeat_play_music_action";
         private onClickBroadcast listener;
 
         void setListener(onClickBroadcast listener) {
@@ -445,6 +519,21 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                     int positionMp3 = intent.getIntExtra(Mp3Activity.POSITION_PLAY_MP3, 0);
                     listener.onClickPlayMp3(positionMp3);
                     break;
+                case SEND_SHUFFLE_MUSIC_ACTION:
+                    listener.shufflePlayMusic();
+                    break;
+                case SEND_REPEAT_ONE_ACTION:
+                    String repeatOne = intent.getStringExtra(PlayMusicActivity.OKE_REPEAT_ONE);
+                    int positionRepeatOne = intent.getIntExtra(PlayMusicActivity.POSITION_REPEAT_ONE, 0);
+                    listener.repeatOnePlayMusic(repeatOne, positionRepeatOne);
+                    break;
+                case SEND_UN_SHUFFLE_MUSIC_ACTION:
+                    listener.unShufflePlayMusic();
+                    break;
+                case SEND_REPEAT_PLAY_MUSIC_ACTION:
+                    listener.repeatPlayMusic();
+                    break;
+
             }
         }
     }

@@ -8,7 +8,7 @@
         android:pivotX="50%"
         android:repeatCount = "infinite"
         android:repeatMode = "restart"
-        android:duration ="10000"
+        android:duration ="20000"
         />
 
 </set>

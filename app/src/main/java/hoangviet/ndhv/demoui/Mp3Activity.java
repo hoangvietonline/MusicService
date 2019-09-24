@@ -101,13 +101,13 @@ public class Mp3Activity extends AppCompatActivity implements MusicAdapter.onCli
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         if (requestCode == REQUEST_CODE_PLAY_MUSIC && resultCode == RESULT_OK && data != null){
-            int position = data.getIntExtra(PlayMusicActivity.POSITION_RESULTS,0);
-            Log.d(TAG, "onActivityResult: " + position);
+            Music music1 = data.getParcelableExtra(PlayMusicActivity.POSITION_RESULTS);
+
             for (int j = 0; j < musicList.size(); j++) {
-                if ( j != position){
+                if (!musicList.get(j).getMusicName().equals(music1.getMusicName())){
                     musicList.get(j).setPlay(false);
                 }else {
-                    musicList.get(position).setPlay(true);
+                    musicList.get(j).setPlay(true);
                 }
             }
         }

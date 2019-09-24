@@ -20,7 +20,6 @@ import com.bumptech.glide.Glide;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -32,17 +31,19 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
     public static final String POSITION_NEXT_MUSIC_PLAY = "position_next_music_play";
     public static final String SEEKBAR_PLAY_MUSIC = "seekBar_play_music";
     public static final String POSITION_RESULTS = "position_results";
+    public static final String POSITION_REPEAT_ONE = "position_repeat_one";
+    public static final String OKE_REPEAT_ONE = "oke_repeat_one";
     private static final String TAG = "PlayMusicActivity";
     private CircleImageView imgAvatarPlayMusic;
     private TextView txtNamePlayMusic, txtSingerMusic, txtTimeRun, txtTimeSum;
-    private ImageButton btnPlayMusic, btnPreviousMusic, btnNextMusic, btnRepeatMusic, btnShuffleMusic;
+    private ImageButton btnPlayMusic, btnPreviousMusic, btnNextMusic, btnRepeatMusic, btnShuffleMusic, btnRepeatOneMusic, btnUnShuffleMusic;
     private SeekBar seekBarPlayMusic;
     private List<Music> list;
     private int position;
     private Music music;
     private MediaPlayerBroadcast mediaPlayerBroadcast;
     private Animation animation;
-
+    private BroadcastMusic broadcastMusic;
 
 
     @Override
@@ -50,8 +51,11 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate: ");
         setContentView(R.layout.activity_play_music);
+        bind();
+        list = new ArrayList<>();
+        addMusic();
         animation = AnimationUtils.loadAnimation(this, R.anim.round_image);
-        BroadcastMusic broadcastMusic = new BroadcastMusic();
+        broadcastMusic = new BroadcastMusic();
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(BroadcastMusic.BUTTON_PREVIOUS);
         intentFilter.addAction(BroadcastMusic.BUTTON_PLAY);
@@ -64,6 +68,8 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         IntentFilter intentFilterMediaPlayer = new IntentFilter();
         intentFilterMediaPlayer.addAction(MediaPlayerBroadcast.SEND_TIME_MEDIAPLAYER);
         intentFilterMediaPlayer.addAction(MediaPlayerBroadcast.SEND_POSITION_PLAY_MUSIC);
+        intentFilterMediaPlayer.addAction(MediaPlayerBroadcast.SEND_MUSIC_SHUFFLE_PLAY_MUSIC);
+        intentFilterMediaPlayer.addAction(MediaPlayerBroadcast.SEND_UN_SHUFFLE_PLAY_MUSIC);
         LocalBroadcastManager.getInstance(this).registerReceiver(mediaPlayerBroadcast, intentFilterMediaPlayer);
 
         mediaPlayerBroadcast.setTakeMediaPlayer(new TakeMediaPlayer() {
@@ -81,23 +87,28 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
             public void playMusicAgain(int positionMusic, int duration) {
                 initMediaPlayer(positionMusic);
                 setTimetotal(duration);
-                position++;
-                if (position > list.size() - 1) {
-                    position = 0;
-                }
-                music = list.get(position);
+
+                music = list.get(positionMusic);
                 music.setPlay(true);
                 btnPlayMusic.setImageResource(R.drawable.icon_pause);
                 for (int i = 0; i < list.size(); i++) {
-                    if (i != position) {
+                    if (i != positionMusic) {
                         list.get(i).setPlay(false);
                     }
                 }
+                position = positionMusic;
+            }
+
+            @Override
+            public void takeMusicShuffle(List<Music> musicList) {
+                list = musicList;
+            }
+
+            @Override
+            public void takeMusicRepeat(List<Music> musicList) {
+                list = musicList;
             }
         });
-        bind();
-        list = new ArrayList<>();
-        addMusic();
         final Intent intent = getIntent();
         final Bundle bundle = intent.getBundleExtra(Mp3Activity.BUNDLE_KEY);
         if (bundle != null) {
@@ -105,10 +116,10 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
             music = list.get(position);
             music.setPlay(true);
             btnPlayMusic.setImageResource(R.drawable.icon_pause);
-        }else {
+        } else {
             Bundle bundleNotify = getIntent().getExtras();
             position = bundleNotify != null ? bundleNotify.getInt(MyMusicServices.SERVICE_POSITION_NOTIFICATION) : 0;
-            Log.d(TAG, "onCreate: postition  " +position);
+            Log.d(TAG, "onCreate: postition  " + position);
             music = list.get(position);
             music.setPlay(true);
             btnPlayMusic.setImageResource(R.drawable.icon_pause);
@@ -117,15 +128,53 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         initMediaPlayer(position);
 
 //button shuffle array and repeat music
+        btnShuffleMusic.setVisibility(View.VISIBLE);
+        btnUnShuffleMusic.setVisibility(View.GONE);
+        btnRepeatMusic.setVisibility(View.VISIBLE);
+        btnRepeatOneMusic.setVisibility(View.GONE);
+
         btnShuffleMusic.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Collections.shuffle(list);
+                Intent intentShuffle = new Intent();
+                intentShuffle.setAction(MyMusicServices.CurrentTimeBroadcast.SEND_SHUFFLE_MUSIC_ACTION);
+                LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentShuffle);
+                btnShuffleMusic.setVisibility(View.GONE);
+                btnUnShuffleMusic.setVisibility(View.VISIBLE);
+            }
+        });
+        btnUnShuffleMusic.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                btnShuffleMusic.setVisibility(View.VISIBLE);
+                btnUnShuffleMusic.setVisibility(View.GONE);
+                Intent intentUnShuffle = new Intent();
+                intentUnShuffle.setAction(MyMusicServices.CurrentTimeBroadcast.SEND_UN_SHUFFLE_MUSIC_ACTION);
+                LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentUnShuffle);
+            }
+        });
+
+        btnRepeatOneMusic.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                btnRepeatMusic.setVisibility(View.VISIBLE);
+                btnRepeatOneMusic.setVisibility(View.GONE);
+                Intent intentRepeatOne = new Intent();
+                intentRepeatOne.setAction(MyMusicServices.CurrentTimeBroadcast.SEND_REPEAT_ONE_ACTION);
+                intentRepeatOne.putExtra(OKE_REPEAT_ONE, "OKE");
+                intentRepeatOne.putExtra(POSITION_REPEAT_ONE, position);
+                LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentRepeatOne);
+
             }
         });
         btnRepeatMusic.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                btnRepeatMusic.setVisibility(View.GONE);
+                btnRepeatOneMusic.setVisibility(View.VISIBLE);
+                Intent intentRepeat = new Intent();
+                intentRepeat.setAction(MyMusicServices.CurrentTimeBroadcast.SEND_REPEAT_PLAY_MUSIC_ACTION);
+                LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentRepeat);
             }
         });
 
@@ -230,6 +279,8 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         btnRepeatMusic = findViewById(R.id.btnRepeatPlayMusic);
         btnShuffleMusic = findViewById(R.id.btnShufflePlayMusic);
         seekBarPlayMusic = findViewById(R.id.seeBarPlayMusic);
+        btnRepeatOneMusic = findViewById(R.id.btnRepeatOnePlayMusic);
+        btnUnShuffleMusic = findViewById(R.id.btnUnShufflePlayMusic);
     }
 
     private void addMusic() {
@@ -322,45 +373,16 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
 
     @Override
     public void onBackPressed() {
+        Intent intentUnShuffle = new Intent();
+        intentUnShuffle.setAction(MyMusicServices.CurrentTimeBroadcast.SEND_UN_SHUFFLE_MUSIC_ACTION);
+        LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentUnShuffle);
         Intent intentMp3 = new Intent();
-        intentMp3.putExtra(POSITION_RESULTS, position);
+        music = list.get(position);
+        intentMp3.putExtra(POSITION_RESULTS, music);
         setResult(Mp3Activity.RESULT_OK, intentMp3);
         finish();
         super.onBackPressed();
 
-    }
-
-    interface TakeMediaPlayer {
-
-        void takeCurrentMediaPlayer(int current, int duration);
-
-        void playMusicAgain(int position, int durationMusic);
-    }
-
-    public class MediaPlayerBroadcast extends BroadcastReceiver {
-        public static final String SEND_TIME_MEDIAPLAYER = "time_mediaPlayer";
-        public static final String SEND_POSITION_PLAY_MUSIC = "send_position_play_music";
-        TakeMediaPlayer takeMediaPlayer;
-
-        public void setTakeMediaPlayer(TakeMediaPlayer takeMediaPlayer) {
-            this.takeMediaPlayer = takeMediaPlayer;
-        }
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            switch (Objects.requireNonNull(intent.getAction())) {
-                case SEND_TIME_MEDIAPLAYER:
-                    int current = intent.getIntExtra(MyMusicServices.CURRENT_KEY, 0);
-                    int durationMedia = intent.getIntExtra(MyMusicServices.DURATION_KEY, 0);
-                    takeMediaPlayer.takeCurrentMediaPlayer(current, durationMedia);
-                    break;
-                case SEND_POSITION_PLAY_MUSIC:
-                    int positionMusic = intent.getIntExtra(MyMusicServices.POSITION_MUSIC_PLAY_KEY, 0);
-                    int durationMusic = intent.getIntExtra(MyMusicServices.DURATION_MUSIC_AGAIN, 0);
-                    takeMediaPlayer.playMusicAgain(positionMusic, durationMusic);
-                    break;
-            }
-        }
     }
 
     @Override
@@ -386,6 +408,7 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         super.onDestroy();
         Log.d(TAG, "onDestroy: ");
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mediaPlayerBroadcast);
+        unregisterReceiver(broadcastMusic);
     }
 
     @Override
@@ -406,7 +429,6 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
             public void playMusicAgain(int positionMusic, int duration) {
                 initMediaPlayer(positionMusic);
                 setTimetotal(duration);
-                position++;
                 if (position > list.size() - 1) {
                     position = 0;
                 }
@@ -419,8 +441,65 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
                     }
                 }
             }
+
+            @Override
+            public void takeMusicShuffle(List<Music> musicList) {
+
+            }
+
+            @Override
+            public void takeMusicRepeat(List<Music> musicList) {
+
+            }
         });
         Log.d(TAG, "onRestart: ");
+    }
+
+    interface TakeMediaPlayer {
+
+        void takeCurrentMediaPlayer(int current, int duration);
+
+        void playMusicAgain(int position, int durationMusic);
+
+        void takeMusicShuffle(List<Music> musicList);
+
+        void takeMusicRepeat(List<Music> musicList);
+    }
+
+    public class MediaPlayerBroadcast extends BroadcastReceiver {
+        public static final String SEND_TIME_MEDIAPLAYER = "time_mediaPlayer";
+        public static final String SEND_POSITION_PLAY_MUSIC = "send_position_play_music";
+        public static final String SEND_MUSIC_SHUFFLE_PLAY_MUSIC = "send_music_shuffle_play_music";
+        public static final String SEND_UN_SHUFFLE_PLAY_MUSIC = "send_repeat_play_music";
+        TakeMediaPlayer takeMediaPlayer;
+
+        public void setTakeMediaPlayer(TakeMediaPlayer takeMediaPlayer) {
+            this.takeMediaPlayer = takeMediaPlayer;
+        }
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            switch (Objects.requireNonNull(intent.getAction())) {
+                case SEND_TIME_MEDIAPLAYER:
+                    int current = intent.getIntExtra(MyMusicServices.CURRENT_KEY, 0);
+                    int durationMedia = intent.getIntExtra(MyMusicServices.DURATION_KEY, 0);
+                    takeMediaPlayer.takeCurrentMediaPlayer(current, durationMedia);
+                    break;
+                case SEND_POSITION_PLAY_MUSIC:
+                    int positionMusic = intent.getIntExtra(MyMusicServices.POSITION_MUSIC_PLAY_KEY, 0);
+                    int durationMusic = intent.getIntExtra(MyMusicServices.DURATION_MUSIC_AGAIN, 0);
+                    takeMediaPlayer.playMusicAgain(positionMusic, durationMusic);
+                    break;
+                case SEND_MUSIC_SHUFFLE_PLAY_MUSIC:
+                    List<Music> musicList = intent.getParcelableArrayListExtra(MyMusicServices.MUSIC_LIST_SHUFFLE);
+                    takeMediaPlayer.takeMusicShuffle(musicList);
+                    break;
+                case SEND_UN_SHUFFLE_PLAY_MUSIC:
+                    List<Music> musicListRepeat = intent.getParcelableArrayListExtra(MyMusicServices.MUSIC_LIST_UNSHUFFLE);
+                    takeMediaPlayer.takeMusicRepeat(musicListRepeat);
+                    break;
+            }
+        }
     }
 
 }
