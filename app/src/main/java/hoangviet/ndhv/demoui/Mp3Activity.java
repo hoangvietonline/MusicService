@@ -21,9 +21,12 @@ public class Mp3Activity extends AppCompatActivity implements MusicAdapter.onCli
     public static final String POSITION_PLAY_MP3 = "position_play_mp3";
     public static final int REQUEST_CODE_PLAY_MUSIC = 1245;
     public static final String STATE_REPEAT_ONE = "state_repeat_one";
+    public static final String STATE_SHUFFLE = "state_shuffle" ;
     private List<Music> musicList;
     private MusicAdapter adapter;
     private int stateRepeatOne = 0;
+    private int stateShuffle = 0;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -68,6 +71,7 @@ public class Mp3Activity extends AppCompatActivity implements MusicAdapter.onCli
         bundle.putInt(POSITION_KEY, position);
         bundle.putParcelable(MUSIC_KEY,music);
         bundle.putInt(STATE_REPEAT_ONE,stateRepeatOne);
+        bundle.putInt(STATE_SHUFFLE,stateShuffle);
         intent.putExtra(BUNDLE_KEY, bundle);
 
 
@@ -105,12 +109,17 @@ public class Mp3Activity extends AppCompatActivity implements MusicAdapter.onCli
         if (requestCode == REQUEST_CODE_PLAY_MUSIC && resultCode == RESULT_OK && data != null){
             Music music1 = data.getParcelableExtra(PlayMusicActivity.POSITION_RESULTS);
             stateRepeatOne = data.getIntExtra("state_repeat_one",0);
-
+            stateShuffle = data.getIntExtra("state_shuffle",0);
             for (int j = 0; j < musicList.size(); j++) {
                 if (!musicList.get(j).getMusicName().equals(music1.getMusicName())){
                     musicList.get(j).setPlay(false);
                 }else {
-                    musicList.get(j).setPlay(true);
+                    if (music1.isPlay()){
+                        musicList.get(j).setPlay(true);
+                    }else {
+                        musicList.get(j).setPlay(false);
+                    }
+
                 }
             }
         }

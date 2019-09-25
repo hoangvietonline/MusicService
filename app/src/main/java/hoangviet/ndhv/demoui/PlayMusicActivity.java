@@ -45,6 +45,7 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
     private Animation animation;
     private BroadcastMusic broadcastMusic;
     private int stateRepeatOnePlayMusic;
+    private int stateShufflePlayMusic;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -117,6 +118,7 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         if (bundle != null) {
             position = bundle.getInt(Mp3Activity.POSITION_KEY);
             stateRepeatOnePlayMusic = bundle.getInt(Mp3Activity.STATE_REPEAT_ONE);
+            stateShufflePlayMusic = bundle.getInt(Mp3Activity.STATE_SHUFFLE);
             music = list.get(position);
             music.setPlay(true);
             btnPlayMusic.setImageResource(R.drawable.icon_pause);
@@ -132,8 +134,7 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         initMediaPlayer(position);
 
 ////button shuffle array and repeat music
-        btnShuffleMusic.setVisibility(View.VISIBLE);
-        btnUnShuffleMusic.setVisibility(View.GONE);
+
 
         if (stateRepeatOnePlayMusic != 0) {
             if (stateRepeatOnePlayMusic == View.VISIBLE) {
@@ -149,14 +150,33 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
             btnRepeatOneMusic.setVisibility(View.VISIBLE);
         }
 
-        btnShuffleMusic.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+
+        if (stateShufflePlayMusic != 0){
+            if (stateShufflePlayMusic == View.GONE){
+                btnShuffleMusic.setVisibility(View.GONE);
+                btnUnShuffleMusic.setVisibility(View.VISIBLE);
                 Intent intentShuffle = new Intent();
                 intentShuffle.setAction(MyMusicServices.CurrentTimeBroadcast.SEND_SHUFFLE_MUSIC_ACTION);
                 LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentShuffle);
+            }else {
+                btnShuffleMusic.setVisibility(View.VISIBLE);
+                btnUnShuffleMusic.setVisibility(View.GONE);
+            }
+        }else {
+            btnShuffleMusic.setVisibility(View.VISIBLE);
+            btnUnShuffleMusic.setVisibility(View.GONE);
+        }
+
+
+        btnShuffleMusic.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
                 btnShuffleMusic.setVisibility(View.GONE);
                 btnUnShuffleMusic.setVisibility(View.VISIBLE);
+                Intent intentShuffle = new Intent();
+                intentShuffle.setAction(MyMusicServices.CurrentTimeBroadcast.SEND_SHUFFLE_MUSIC_ACTION);
+                LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentShuffle);
+
             }
         });
         btnUnShuffleMusic.setOnClickListener(new View.OnClickListener() {
@@ -248,7 +268,6 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
                 intentPlayMusic.setAction(MyMusicServices.CurrentTimeBroadcast.SEND_PLAY_PLAY_MUSIC_ACTION);
                 intentPlayMusic.putExtra(POSITION_PLAY_MUSIC_PLAY, position);
                 LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentPlayMusic);
-                music = list.get(position);
                 if (music != null) {
                     if (music.isPlay()) {
                         btnPlayMusic.setImageResource(R.drawable.icon_play);
@@ -293,6 +312,7 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         btnPlayMusic = findViewById(R.id.btnPlayPlayMusic);
         btnPreviousMusic = findViewById(R.id.btnPreviousPlayMusic);
         btnRepeatMusic = findViewById(R.id.btnRepeatOnePlayMusic);
+
         btnShuffleMusic = findViewById(R.id.btnUnShufflePlayMusic);
         seekBarPlayMusic = findViewById(R.id.seeBarPlayMusic);
         btnRepeatOneMusic = findViewById(R.id.btnRepeatPlayMusic);
@@ -394,6 +414,8 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentUnShuffle);
         Intent intentMp3 = new Intent();
         int stateRepeatOne = btnRepeatOneMusic.getVisibility();
+        int stateShuffle = btnShuffleMusic.getVisibility();
+        intentMp3.putExtra("state_shuffle",stateShuffle);
         intentMp3.putExtra("state_repeat_one", stateRepeatOne);
         intentMp3.putExtra(POSITION_RESULTS, music);
         setResult(Mp3Activity.RESULT_OK, intentMp3);
@@ -433,45 +455,7 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
     @Override
     protected void onRestart() {
         super.onRestart();
-        mediaPlayerBroadcast.setTakeMediaPlayer(new TakeMediaPlayer() {
 
-            //function run time : 100/1000
-            @Override
-            public void takeCurrentMediaPlayer(final int current, int duration) {
-                @SuppressLint("SimpleDateFormat") SimpleDateFormat formatMinute = new SimpleDateFormat("mm:ss");
-                txtTimeRun.setText(formatMinute.format(current));
-                seekBarPlayMusic.setProgress(current);
-                setTimetotal(duration);
-
-            }
-
-            @Override
-            public void playMusicAgain(int positionMusic, int duration) {
-                initMediaPlayer(positionMusic);
-                setTimetotal(duration);
-                if (position > list.size() - 1) {
-                    position = 0;
-                }
-                music = list.get(position);
-                music.setPlay(true);
-                btnPlayMusic.setImageResource(R.drawable.icon_pause);
-                for (int i = 0; i < list.size(); i++) {
-                    if (i != position) {
-                        list.get(i).setPlay(false);
-                    }
-                }
-            }
-
-            @Override
-            public void takeMusicShuffle(List<Music> musicList) {
-
-            }
-
-            @Override
-            public void takeMusicRepeat(List<Music> musicList) {
-
-            }
-        });
         if (btnRepeatOneMusic.getVisibility() == View.VISIBLE) {
             btnRepeatMusic.setVisibility(View.GONE);
         } else {

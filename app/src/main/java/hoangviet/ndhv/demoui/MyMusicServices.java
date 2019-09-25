@@ -54,8 +54,10 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
     private int position = 0;
     private String repeatOne = "";
     private List<Music> musicList;
+    private List<Music> musicListReplace;
     private CurrentTimeBroadcast broadcast;
     private RemoteViews notificationLayout;
+    private Music music;
 
     public MyMusicServices() {
 
@@ -108,7 +110,9 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
     public void onCreate() {
         super.onCreate();
         musicList = new ArrayList<>();
+        musicListReplace = new ArrayList<>();
         addMusic();
+        musicListReplace.addAll(musicList);
     }
 
     @Override
@@ -148,6 +152,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                     mMediaPlayer.start();
                 }
                 oldPossition = position;
+                music = musicList.get(position);
                 MyMusicServices.this.position = position;
                 mediaPlayerCurrentTime();
                 initNotifyMusic(position);
@@ -171,6 +176,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                 MyMusicServices.this.position = position;
                 mediaPlayerCurrentTime();
                 initNotifyMusic(position);
+                music = musicList.get(position);
             }
 
             @Override
@@ -192,6 +198,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                 MyMusicServices.this.position = position;
                 Log.d(TAG, "onClickNextMusic:next music " + position);
                 initNotifyMusic(position);
+                music = musicList.get(position);
 
             }
 
@@ -210,6 +217,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                 MyMusicServices.this.position = position;
                 mediaPlayerCurrentTime();
                 initNotifyMusic(position);
+                music = musicList.get(position);
             }
 
             @Override
@@ -238,11 +246,13 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                 MyMusicServices.this.position = position;
                 initNotifyMusic(position);
                 mediaPlayerCurrentTime();
+                music = musicList.get(position);
             }
 
             @Override
             public void shufflePlayMusic() {
                 Collections.shuffle(musicList);
+                Log.d(TAG, "shufflePlayMusic: position shuffle " +position);
                 Intent intentMusicShuffle = new Intent();
                 intentMusicShuffle.setAction(PlayMusicActivity.MediaPlayerBroadcast.SEND_MUSIC_SHUFFLE_PLAY_MUSIC);
                 intentMusicShuffle.putParcelableArrayListExtra(MUSIC_LIST_SHUFFLE, (ArrayList<? extends Parcelable>) musicList);
@@ -254,18 +264,15 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                 repeatOne = oke;
                 Log.d(TAG, "repeatOnePlayMusic: repeat one " + repeatOne);
                 position = pos;
-                Log.d(TAG, "repeatOnePlayMusic: repeatone position " + position);
+                Log.d(TAG, "repeatOnePlayMusic: repeat one position " + position);
             }
 
             @Override
             public void unShufflePlayMusic() {
-                musicList = new ArrayList<>();
-                addMusic();
-                Log.d(TAG, "unShufflePlayMusic:musicList "+musicList.size());
-                Intent intentMusicRepeat = new Intent();
-                intentMusicRepeat.setAction(PlayMusicActivity.MediaPlayerBroadcast.SEND_UN_SHUFFLE_PLAY_MUSIC);
-                intentMusicRepeat.putParcelableArrayListExtra(MUSIC_LIST_UNSHUFFLE, (ArrayList<? extends Parcelable>) musicList);
-                LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intentMusicRepeat);
+                Intent intentUnShuffle = new Intent();
+                intentUnShuffle.setAction(PlayMusicActivity.MediaPlayerBroadcast.SEND_UN_SHUFFLE_PLAY_MUSIC);
+                intentUnShuffle.putParcelableArrayListExtra(MUSIC_LIST_UNSHUFFLE, (ArrayList<? extends Parcelable>) musicListReplace);
+                LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intentUnShuffle);
             }
 
             @Override
@@ -305,7 +312,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                     @Override
                     public void onCompletion(MediaPlayer mp) {
                         if (repeatOne.equals("OKE")) {
-                            mMediaPlayer = MediaPlayer.create(getApplicationContext(), musicList.get(position).getFileSong());
+                            mMediaPlayer = MediaPlayer.create(getApplicationContext(), music.getFileSong());
                             Log.d(TAG, "onCompletion: position media " + position);
                             mMediaPlayer.start();
                             int durationMediaPlayer = mMediaPlayer.getDuration();
@@ -381,11 +388,11 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
         PendingIntent pendingIntentNext = PendingIntent.getBroadcast(this, 3, intentNext, PendingIntent.FLAG_CANCEL_CURRENT);
 
         Notification builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.drawable.icon_music)
+                .setSmallIcon(R.drawable.icons8_music)
                 .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
                 .setCustomContentView(notificationLayout)
                 .setContentIntent(pendingIntent)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .build();
 
         notificationLayout.setOnClickPendingIntent(R.id.btnPreviousNotify, pendingIntentPrevious);
