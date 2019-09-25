@@ -224,6 +224,10 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                         stopMusic();
                         mMediaPlayer = MediaPlayer.create(getApplicationContext(), musicList.get(position).getFileSong());
                         mMediaPlayer.start();
+                    }else {
+                        if (!mMediaPlayer.isPlaying()){
+                            mMediaPlayer.start();
+                        }
                     }
 
                 } else {

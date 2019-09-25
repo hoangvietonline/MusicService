@@ -20,9 +20,10 @@ public class Mp3Activity extends AppCompatActivity implements MusicAdapter.onCli
     public static final String MUSIC_KEY = "music_key";
     public static final String POSITION_PLAY_MP3 = "position_play_mp3";
     public static final int REQUEST_CODE_PLAY_MUSIC = 1245;
+    public static final String STATE_REPEAT_ONE = "state_repeat_one";
     private List<Music> musicList;
     private MusicAdapter adapter;
-
+    private int stateRepeatOne = 0;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -66,6 +67,7 @@ public class Mp3Activity extends AppCompatActivity implements MusicAdapter.onCli
         Bundle bundle = new Bundle();
         bundle.putInt(POSITION_KEY, position);
         bundle.putParcelable(MUSIC_KEY,music);
+        bundle.putInt(STATE_REPEAT_ONE,stateRepeatOne);
         intent.putExtra(BUNDLE_KEY, bundle);
 
 
@@ -102,6 +104,7 @@ public class Mp3Activity extends AppCompatActivity implements MusicAdapter.onCli
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         if (requestCode == REQUEST_CODE_PLAY_MUSIC && resultCode == RESULT_OK && data != null){
             Music music1 = data.getParcelableExtra(PlayMusicActivity.POSITION_RESULTS);
+            stateRepeatOne = data.getIntExtra("state_repeat_one",0);
 
             for (int j = 0; j < musicList.size(); j++) {
                 if (!musicList.get(j).getMusicName().equals(music1.getMusicName())){

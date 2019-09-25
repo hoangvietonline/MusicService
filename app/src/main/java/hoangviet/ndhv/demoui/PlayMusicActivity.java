@@ -44,7 +44,7 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
     private MediaPlayerBroadcast mediaPlayerBroadcast;
     private Animation animation;
     private BroadcastMusic broadcastMusic;
-
+    private int stateRepeatOnePlayMusic;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -102,6 +102,9 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
             @Override
             public void takeMusicShuffle(List<Music> musicList) {
                 list = musicList;
+                Log.d(TAG, "takeMusicShuffle: "+music.toString());
+                Log.d(TAG, "takeMusicShuffle: "+position);
+                Log.d(TAG, "takeMusicShuffle:name " + music.getMusicName());
             }
 
             @Override
@@ -113,6 +116,7 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         final Bundle bundle = intent.getBundleExtra(Mp3Activity.BUNDLE_KEY);
         if (bundle != null) {
             position = bundle.getInt(Mp3Activity.POSITION_KEY);
+            stateRepeatOnePlayMusic = bundle.getInt(Mp3Activity.STATE_REPEAT_ONE);
             music = list.get(position);
             music.setPlay(true);
             btnPlayMusic.setImageResource(R.drawable.icon_pause);
@@ -127,11 +131,23 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
 
         initMediaPlayer(position);
 
-//button shuffle array and repeat music
+////button shuffle array and repeat music
         btnShuffleMusic.setVisibility(View.VISIBLE);
         btnUnShuffleMusic.setVisibility(View.GONE);
-        btnRepeatMusic.setVisibility(View.VISIBLE);
-        btnRepeatOneMusic.setVisibility(View.GONE);
+
+        if (stateRepeatOnePlayMusic != 0) {
+            if (stateRepeatOnePlayMusic == View.VISIBLE) {
+                btnRepeatOneMusic.setVisibility(View.VISIBLE);
+                btnRepeatMusic.setVisibility(View.GONE);
+            } else {
+                btnRepeatOneMusic.setVisibility(View.GONE);
+                btnRepeatMusic.setVisibility(View.VISIBLE);
+            }
+
+        } else {
+            btnRepeatMusic.setVisibility(View.GONE);
+            btnRepeatOneMusic.setVisibility(View.VISIBLE);
+        }
 
         btnShuffleMusic.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -276,11 +292,11 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         btnNextMusic = findViewById(R.id.btnNextPlayMusic);
         btnPlayMusic = findViewById(R.id.btnPlayPlayMusic);
         btnPreviousMusic = findViewById(R.id.btnPreviousPlayMusic);
-        btnRepeatMusic = findViewById(R.id.btnRepeatPlayMusic);
-        btnShuffleMusic = findViewById(R.id.btnShufflePlayMusic);
+        btnRepeatMusic = findViewById(R.id.btnRepeatOnePlayMusic);
+        btnShuffleMusic = findViewById(R.id.btnUnShufflePlayMusic);
         seekBarPlayMusic = findViewById(R.id.seeBarPlayMusic);
-        btnRepeatOneMusic = findViewById(R.id.btnRepeatOnePlayMusic);
-        btnUnShuffleMusic = findViewById(R.id.btnUnShufflePlayMusic);
+        btnRepeatOneMusic = findViewById(R.id.btnRepeatPlayMusic);
+        btnUnShuffleMusic = findViewById(R.id.btnShufflePlayMusic);
     }
 
     private void addMusic() {
@@ -377,11 +393,14 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         intentUnShuffle.setAction(MyMusicServices.CurrentTimeBroadcast.SEND_UN_SHUFFLE_MUSIC_ACTION);
         LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentUnShuffle);
         Intent intentMp3 = new Intent();
-        music = list.get(position);
+        int stateRepeatOne = btnRepeatOneMusic.getVisibility();
+        intentMp3.putExtra("state_repeat_one", stateRepeatOne);
         intentMp3.putExtra(POSITION_RESULTS, music);
         setResult(Mp3Activity.RESULT_OK, intentMp3);
         finish();
         super.onBackPressed();
+        Log.d(TAG, "onBackPressed:position "+position);
+        Log.d(TAG, "onBackPressed:name "+music.getMusicName());
 
     }
 
@@ -423,6 +442,7 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
                 txtTimeRun.setText(formatMinute.format(current));
                 seekBarPlayMusic.setProgress(current);
                 setTimetotal(duration);
+
             }
 
             @Override
@@ -452,6 +472,16 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
 
             }
         });
+        if (btnRepeatOneMusic.getVisibility() == View.VISIBLE) {
+            btnRepeatMusic.setVisibility(View.GONE);
+        } else {
+            btnRepeatMusic.setVisibility(View.VISIBLE);
+        }
+        if (btnShuffleMusic.getVisibility() == View.VISIBLE) {
+            btnUnShuffleMusic.setVisibility(View.GONE);
+        } else {
+            btnUnShuffleMusic.setVisibility(View.VISIBLE);
+        }
         Log.d(TAG, "onRestart: ");
     }
 
@@ -501,5 +531,4 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
             }
         }
     }
-
 }
