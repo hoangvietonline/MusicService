@@ -1,17 +1,19 @@
 package hoangviet.ndhv.demoui;
 
+import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.support.constraint.ConstraintLayout;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
+import android.view.animation.LinearInterpolator;
 import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -26,7 +28,6 @@ import java.util.Objects;
 import de.hdodenhof.circleimageview.CircleImageView;
 
 public class PlayMusicActivity extends AppCompatActivity implements BroadcastMusic.OnclickNotifyBroadcast {
-    public static final String POSITION_PLAY_MUSIC_PLAY = "position_play_music_play";
     public static final String SEEK_BAR_PLAY_MUSIC = "seek_Bar_play_music";
     public static final String POSITION_RESULTS = "position_results";
     public static final String POSITION_REPEAT_ONE = "position_repeat_one";
@@ -40,11 +41,12 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
     private List<Music> list;
     private int position;
     private Music music;
+    private ObjectAnimator animation;
     private MediaPlayerBroadcast mediaPlayerBroadcast;
-    private Animation animation;
     private BroadcastMusic broadcastMusic;
     private int stateRepeatOnePlayMusic;
     private int stateShufflePlayMusic;
+    private ConstraintLayout constraintLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,7 +56,7 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         bind();
         list = new ArrayList<>();
         addMusic();
-        animation = AnimationUtils.loadAnimation(this, R.anim.round_image);
+//        final Animation animation = AnimationUtils.loadAnimation(this, R.anim.round_image);
         broadcastMusic = new BroadcastMusic();
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(BroadcastMusic.BUTTON_PREVIOUS);
@@ -63,6 +65,12 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         registerReceiver(broadcastMusic, intentFilter);
         broadcastMusic.setMyBroadcastCall(this);
 
+        animation = ObjectAnimator.ofFloat(imgAvatarPlayMusic,"rotation",0,360);
+        animation.setDuration(10000);
+        animation.setRepeatMode(ValueAnimator.RESTART);
+        animation.setRepeatCount(ObjectAnimator.INFINITE);
+        animation.setInterpolator(new LinearInterpolator());
+        animation.start();
 
         mediaPlayerBroadcast = new MediaPlayerBroadcast();
         IntentFilter intentFilterMediaPlayer = new IntentFilter();
@@ -215,6 +223,7 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         btnPreviousMusic.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                animation.start();
                 Intent intentPreviousMusic = new Intent();
                 intentPreviousMusic.setAction(MyMusicServices.CurrentTimeBroadcast.SEND_PREVIOUS_PLAY_MUSIC_ACTION);
                 LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentPreviousMusic);
@@ -224,7 +233,7 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         btnNextMusic.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                animation.start();
                 Intent intentNextMusic = new Intent();
                 intentNextMusic.setAction(MyMusicServices.CurrentTimeBroadcast.SEND_NEXT_PLAY_MUSIC_ACTION);
                 LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentNextMusic);
@@ -243,9 +252,12 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
                     if (music.isPlay()) {
                         btnPlayMusic.setImageResource(R.drawable.icon_play);
                         music.setPlay(false);
+                        animation.pause();
+
                     } else {
                         btnPlayMusic.setImageResource(R.drawable.icon_pause);
                         music.setPlay(true);
+                        animation.resume();
                     }
                 }
             }
@@ -254,12 +266,10 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         seekBarPlayMusic.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-
             }
 
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
-
             }
 
             @Override
@@ -283,11 +293,11 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         btnPlayMusic = findViewById(R.id.btnPlayPlayMusic);
         btnPreviousMusic = findViewById(R.id.btnPreviousPlayMusic);
         btnRepeatMusic = findViewById(R.id.btnRepeatOnePlayMusic);
-
         btnShuffleMusic = findViewById(R.id.btnUnShufflePlayMusic);
         seekBarPlayMusic = findViewById(R.id.seeBarPlayMusic);
         btnRepeatOneMusic = findViewById(R.id.btnRepeatPlayMusic);
         btnUnShuffleMusic = findViewById(R.id.btnShufflePlayMusic);
+        constraintLayout = findViewById(R.id.constraintLayoutView);
     }
 
     private void addMusic() {
@@ -303,7 +313,6 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         Glide.with(this).load(list.get(position).getMusicImage()).into(imgAvatarPlayMusic);
         txtNamePlayMusic.setText(list.get(position).getMusicName());
         txtSingerMusic.setText(list.get(position).getMusicSinger());
-        imgAvatarPlayMusic.setAnimation(animation);
     }
 
     private void setTimetotal(int duration) {
@@ -317,6 +326,7 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         Intent intentPreviousMusic = new Intent();
         intentPreviousMusic.setAction(MyMusicServices.CurrentTimeBroadcast.SEND_PREVIOUS_PLAY_MUSIC_ACTION);
         LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentPreviousMusic);
+        animation.start();
     }
 
     @Override
@@ -328,9 +338,11 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
             if (music.isPlay()) {
                 btnPlayMusic.setImageResource(R.drawable.icon_play);
                 music.setPlay(false);
+                animation.pause();
             } else {
                 btnPlayMusic.setImageResource(R.drawable.icon_pause);
                 music.setPlay(true);
+                animation.resume();
             }
         }
     }
@@ -340,6 +352,7 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         Intent intentNextMusic = new Intent();
         intentNextMusic.setAction(MyMusicServices.CurrentTimeBroadcast.SEND_NEXT_PLAY_MUSIC_ACTION);
         LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentNextMusic);
+        animation.start();
     }
 
     @Override

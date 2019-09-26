@@ -5,7 +5,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/background_list"
-    tools:context=".PlayMusicActivity">
+    tools:context=".PlayMusicActivity"
+    android:id="@+id/constraintLayoutView"
+    >
 
     <de.hdodenhof.circleimageview.CircleImageView
         android:id="@+id/imgAvatarPlayMusic"
