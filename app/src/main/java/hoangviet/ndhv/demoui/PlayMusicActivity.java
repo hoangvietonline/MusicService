@@ -32,8 +32,8 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
     public static final String POSITION_RESULTS = "position_results";
     public static final String POSITION_REPEAT_ONE = "position_repeat_one";
     public static final String OKE_REPEAT_ONE = "oke_repeat_one";
-    private static final String TAG = "PlayMusicActivity";
     public static final String CONFIRM_SHUFFLE_OKE = "confirm_shuffle_oke";
+    private static final String TAG = "PlayMusicActivity";
     private CircleImageView imgAvatarPlayMusic;
     private TextView txtNamePlayMusic, txtSingerMusic, txtTimeRun, txtTimeSum;
     private ImageButton btnPlayMusic, btnPreviousMusic, btnNextMusic, btnRepeatMusic, btnShuffleMusic, btnRepeatOneMusic, btnUnShuffleMusic;
@@ -65,7 +65,7 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         registerReceiver(broadcastMusic, intentFilter);
         broadcastMusic.setMyBroadcastCall(this);
 
-        animation = ObjectAnimator.ofFloat(imgAvatarPlayMusic,"rotation",0,360);
+        animation = ObjectAnimator.ofFloat(imgAvatarPlayMusic, "rotation", 0, 360);
         animation.setDuration(10000);
         animation.setRepeatMode(ValueAnimator.RESTART);
         animation.setRepeatCount(ObjectAnimator.INFINITE);
@@ -159,15 +159,15 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         }
 
 
-        if (stateShufflePlayMusic != 0){
-            if (stateShufflePlayMusic == View.GONE){
+        if (stateShufflePlayMusic != 0) {
+            if (stateShufflePlayMusic == View.GONE) {
                 btnShuffleMusic.setVisibility(View.GONE);
                 btnUnShuffleMusic.setVisibility(View.VISIBLE);
-            }else {
+            } else {
                 btnShuffleMusic.setVisibility(View.VISIBLE);
                 btnUnShuffleMusic.setVisibility(View.GONE);
             }
-        }else {
+        } else {
             btnShuffleMusic.setVisibility(View.VISIBLE);
             btnUnShuffleMusic.setVisibility(View.GONE);
         }
@@ -180,7 +180,7 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
                 btnUnShuffleMusic.setVisibility(View.VISIBLE);
                 Intent intentShuffle = new Intent();
                 intentShuffle.setAction(MyMusicServices.CurrentTimeBroadcast.SEND_SHUFFLE_MUSIC_ACTION);
-                intentShuffle.putExtra(CONFIRM_SHUFFLE_OKE,"confirmShuffle");
+                intentShuffle.putExtra(CONFIRM_SHUFFLE_OKE, "confirmShuffle");
                 LocalBroadcastManager.getInstance(PlayMusicActivity.this).sendBroadcast(intentShuffle);
 
             }
@@ -366,14 +366,14 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         Intent intentMp3 = new Intent();
         int stateRepeatOne = btnRepeatOneMusic.getVisibility();
         int stateShuffle = btnShuffleMusic.getVisibility();
-        intentMp3.putExtra("state_shuffle",stateShuffle);
+        intentMp3.putExtra("state_shuffle", stateShuffle);
         intentMp3.putExtra("state_repeat_one", stateRepeatOne);
         intentMp3.putExtra(POSITION_RESULTS, music);
         setResult(Mp3Activity.RESULT_OK, intentMp3);
         finish();
         super.onBackPressed();
-        Log.d(TAG, "onBackPressed:position "+position);
-        Log.d(TAG, "onBackPressed:name "+music.getMusicName());
+        Log.d(TAG, "onBackPressed:position " + position);
+        Log.d(TAG, "onBackPressed:name " + music.getMusicName());
 
     }
 
@@ -454,7 +454,7 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
                     takeMediaPlayer.playMusicAgain(positionMusic, durationMusic);
                     break;
                 case SEND_POSITION_MUSIC_PLAY:
-                    int position = intent.getIntExtra(MyMusicServices.POSITION_PLAY_MUSIC,0);
+                    int position = intent.getIntExtra(MyMusicServices.POSITION_PLAY_MUSIC, 0);
                     takeMediaPlayer.takePositionMusic(position);
                     break;
 

@@ -12,12 +12,13 @@ public class BroadcastMusic extends BroadcastReceiver {
     public static final String BUTTON_NEXT = "button_next";
     OnclickNotifyBroadcast onclickNotifyBroadcast;
 
-    public void setMyBroadcastCall(OnclickNotifyBroadcast myBroadcastCall){
+    public void setMyBroadcastCall(OnclickNotifyBroadcast myBroadcastCall) {
         this.onclickNotifyBroadcast = myBroadcastCall;
     }
+
     @Override
     public void onReceive(Context context, Intent intent) {
-        switch (Objects.requireNonNull(intent.getAction())){
+        switch (Objects.requireNonNull(intent.getAction())) {
             case BUTTON_PREVIOUS:
                 onclickNotifyBroadcast.onClickPrevious();
                 break;
@@ -30,9 +31,12 @@ public class BroadcastMusic extends BroadcastReceiver {
         }
 
     }
-    interface OnclickNotifyBroadcast{
+
+    interface OnclickNotifyBroadcast {
         void onClickPrevious();
+
         void onClickPlay();
+
         void onClickNext();
     }
 }

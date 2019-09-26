@@ -16,6 +16,7 @@ import com.bumptech.glide.Glide;
 import java.util.List;
 
 import de.hdodenhof.circleimageview.CircleImageView;
+
 public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHolder> {
     private onClickItemMusicLitener onClickItemMusicLitener;
     private Context mContext;
@@ -50,18 +51,17 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
         }
 
 
-
         musicViewHolder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                onClickItemMusicLitener.onclickItem(i,music);
+                onClickItemMusicLitener.onclickItem(i, music);
             }
         });
 
         musicViewHolder.btnPlay.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                onClickItemMusicLitener.onClickButtonPlay(music,i);
+                onClickItemMusicLitener.onClickButtonPlay(music, i);
             }
         });
     }
@@ -70,6 +70,13 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
     public int getItemCount() {
         return musicList.size();
     }
+
+    interface onClickItemMusicLitener {
+        void onclickItem(int position, Music music);
+
+        void onClickButtonPlay(Music music, int position);
+    }
+
     class MusicViewHolder extends RecyclerView.ViewHolder {
         private TextView txtMusicName;
         private TextView txtMusicSinger;
@@ -83,9 +90,5 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
             imgMusicAvatar = itemView.findViewById(R.id.imgAvatarMusic);
             btnPlay = itemView.findViewById(R.id.buttonMusicPlay);
         }
-    }
-    interface onClickItemMusicLitener {
-        void onclickItem(int position,Music music);
-        void onClickButtonPlay(Music music,int position);
     }
 }

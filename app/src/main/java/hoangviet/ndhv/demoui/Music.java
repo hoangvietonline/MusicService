@@ -4,6 +4,17 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 public class Music implements Parcelable {
+    public static final Creator<Music> CREATOR = new Creator<Music>() {
+        @Override
+        public Music createFromParcel(Parcel in) {
+            return new Music(in);
+        }
+
+        @Override
+        public Music[] newArray(int size) {
+            return new Music[size];
+        }
+    };
     private String musicName;
     private String musicSinger;
     private String musicImage;
@@ -30,6 +41,7 @@ public class Music implements Parcelable {
         this.isPlay = isPlay;
     }
 
+
     public Music(String musicName, String musicSinger, String musicImage, int fileSong, boolean isPlay) {
         this.musicName = musicName;
         this.musicSinger = musicSinger;
@@ -38,7 +50,6 @@ public class Music implements Parcelable {
         this.isPlay = isPlay;
     }
 
-
     private Music(Parcel in) {
         musicName = in.readString();
         musicSinger = in.readString();
@@ -46,19 +57,6 @@ public class Music implements Parcelable {
         fileSong = in.readInt();
         isPlay = in.readByte() != 0;
     }
-
-    public static final Creator<Music> CREATOR = new Creator<Music>() {
-        @Override
-        public Music createFromParcel(Parcel in) {
-            return new Music(in);
-        }
-
-        @Override
-        public Music[] newArray(int size) {
-            return new Music[size];
-        }
-    };
-
 
     public boolean isPlay() {
         return isPlay;

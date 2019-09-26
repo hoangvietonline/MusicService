@@ -267,7 +267,8 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
         });
         return START_NOT_STICKY;
     }
-    private void randomPosition(){
+
+    private void randomPosition() {
         while (true) {
             Random random = new Random();
             int ranPosition = random.nextInt(musicList.size() - 1);
@@ -282,7 +283,8 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
         mMediaPlayer = MediaPlayer.create(getApplicationContext(), musicList.get(position).getFileSong());
         mMediaPlayer.start();
     }
-    private void sendPosition(){
+
+    private void sendPosition() {
         Intent intentPosition = new Intent();
         intentPosition.setAction(PlayMusicActivity.MediaPlayerBroadcast.SEND_POSITION_MUSIC_PLAY);
         intentPosition.putExtra(POSITION_PLAY_MUSIC, position);
@@ -290,6 +292,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
         mediaPlayerCurrentTime();
         initNotifyMusic(position);
     }
+
     @Override
     public void onDestroy() {
         if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
