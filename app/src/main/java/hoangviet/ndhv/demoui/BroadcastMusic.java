@@ -5,7 +5,9 @@ import android.content.Context;
 import android.content.Intent;
 
 import java.util.Objects;
-
+/*
+broadcast bắn từ pending intent of notification to PlayMusicActivity
+ */
 public class BroadcastMusic extends BroadcastReceiver {
     public static final String BUTTON_PREVIOUS = "button_previous";
     public static final String BUTTON_PLAY = "button_play";
@@ -31,7 +33,7 @@ public class BroadcastMusic extends BroadcastReceiver {
         }
 
     }
-
+//interface thực hiện chức năng 3 nút Previous, next, play
     interface OnclickNotifyBroadcast {
         void onClickPrevious();
 

@@ -43,7 +43,7 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
         musicViewHolder.txtMusicName.setText(music.getMusicName());
         musicViewHolder.txtMusicSinger.setText(music.getMusicSinger());
         Glide.with(mContext).load(music.getMusicImage()).into(musicViewHolder.imgMusicAvatar);
-
+        //set pause or play khi click button play
         if (musicList.get(i).isPlay()) {
             musicViewHolder.btnPlay.setImageResource(R.drawable.icon_pause);
         } else {

@@ -59,7 +59,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
     public MyMusicServices() {
 
     }
-
+    //create circleImage notification
     public static Bitmap getCircleBitmap(Bitmap bitmap) {
         Bitmap output;
         Bitmap tmp;
@@ -67,7 +67,6 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
         float r = 50;
         final int width = bitmap.getWidth();
         final int height = bitmap.getHeight();
-
         output = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
         if (width > height) {
             tmp = Bitmap.createScaledBitmap(bitmap, 100 * width / height, 100, false);
@@ -110,6 +109,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
     @Override
     public int onStartCommand(final Intent intent, final int flags, int startId) {
         broadcast = new CurrentTimeBroadcast();
+        //get broadcast from Mp3Activity and PlayMusicActivity
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(CurrentTimeBroadcast.SEND_PLAY_ACTION);
         intentFilter.addAction(CurrentTimeBroadcast.SEND_PREVIOUS_PLAY_MUSIC_ACTION);
@@ -124,6 +124,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
         LocalBroadcastManager.getInstance(this).registerReceiver(broadcast, intentFilter);
 
         broadcast.setListener(new onClickBroadcast() {
+            //button play Mp3Activity
             @Override
             public void onClickPlay(int position) {
                 if (mMediaPlayer != null) {
@@ -147,7 +148,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                 mediaPlayerCurrentTime();
                 initNotifyMusic(position);
             }
-
+            //button Previous PlayMusicActivity and notification
             @Override
             public void onClickPreviousMusic() {
                 if (mMediaPlayer != null) {
@@ -170,7 +171,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                 }
                 sendPosition();
             }
-
+            //button Next PlayMusicActivity and notification
             @Override
             public void onClickNextMusic() {
                 if (mMediaPlayer != null) {
@@ -193,7 +194,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                 }
                 sendPosition();
             }
-
+            //button Play PlayMusicActivity and notification
             @Override
             public void onClickPlayMusic() {
                 if (mMediaPlayer != null) {
@@ -209,12 +210,12 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                 mediaPlayerCurrentTime();
                 initNotifyMusic(position);
             }
-
+            //seekBar PlayMusicActivity
             @Override
             public void seekBarChange(int seekBarChange) {
                 mMediaPlayer.seekTo(seekBarChange);
             }
-
+            //clickItem Mp3Activity
             @Override
             public void onClickPlayMp3(int position) {
                 if (mMediaPlayer != null) {
@@ -237,27 +238,30 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                 initNotifyMusic(position);
                 mediaPlayerCurrentTime();
             }
-
+            //button shuffle
             @Override
             public void shufflePlayMusic(String confirm) {
+                //String confirm shuffle
                 confirmShuffleOke = confirm;
                 Log.d(TAG, "shufflePlayMusic:confirm " + confirmShuffleOke);
             }
-
+            //button repeatOne Music
             @Override
             public void repeatOnePlayMusic(String oke, int pos) {
+                //String confirm repeat One
                 repeatOne = oke;
                 Log.d(TAG, "repeatOnePlayMusic: repeat one " + repeatOne);
+                //position position repeat one music
                 position = pos;
                 Log.d(TAG, "repeatOnePlayMusic: repeat one position " + position);
             }
-
+            // button unShuffle
             @Override
             public void unShufflePlayMusic() {
                 confirmShuffleOke = "";
 
             }
-
+            //button repeat
             @Override
             public void repeatPlayMusic() {
                 repeatOne = "";
@@ -267,7 +271,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
         });
         return START_NOT_STICKY;
     }
-
+    //random position when shuffle play music
     private void randomPosition() {
         while (true) {
             Random random = new Random();
@@ -283,7 +287,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
         mMediaPlayer = MediaPlayer.create(getApplicationContext(), musicList.get(position).getFileSong());
         mMediaPlayer.start();
     }
-
+    //send position by broadcast mediaPlayerBroadcast every click next,previous music
     private void sendPosition() {
         Intent intentPosition = new Intent();
         intentPosition.setAction(PlayMusicActivity.MediaPlayerBroadcast.SEND_POSITION_MUSIC_PLAY);
@@ -292,7 +296,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
         mediaPlayerCurrentTime();
         initNotifyMusic(position);
     }
-
+    //when destroy services , stop music and CurrentBroadcast
     @Override
     public void onDestroy() {
         if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
@@ -301,7 +305,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
         super.onDestroy();
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcast);
     }
-
+    // hàm lấy currentPosition overtime
     public void mediaPlayerCurrentTime() {
         final Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
@@ -313,11 +317,13 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                 intentCurrent.setAction(PlayMusicActivity.MediaPlayerBroadcast.SEND_TIME_MEDIA_PLAYER);
                 intentCurrent.putExtra(CURRENT_KEY, currentMediaPlayer);
                 intentCurrent.putExtra(DURATION_KEY, durationMediaPlayer);
+                //send position currentMediaplayer and duration 500/1000 update 1 lần
                 LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intentCurrent);
                 // kiểm tra thời gian của bài hát khi hết bài --->next
                 mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                     @Override
                     public void onCompletion(MediaPlayer mp) {
+                        //repeat one music
                         if (repeatOne.equals("OKE")) {
                             mMediaPlayer = MediaPlayer.create(getApplicationContext(), musicList.get(position).getFileSong());
                             Log.d(TAG, "onCompletion: position media " + position);
@@ -330,6 +336,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                             LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intentPositionPlayMusic);
                             initNotifyMusic(position);
                         } else {
+                            //shuffle music
                             if (confirmShuffleOke.equals("confirmShuffle")) {
                                 while (true) {
                                     Random random = new Random();
@@ -404,6 +411,7 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
         Intent intent = new Intent(getApplicationContext(), PlayMusicActivity.class);
         intent.putExtra(SERVICE_POSITION_NOTIFICATION, position);
         intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        //không tạo lại một activity khi back trở về lun màng hình đầu
         PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(), 0, intent, PendingIntent.FLAG_CANCEL_CURRENT);
 
         Intent intentPrevious = new Intent(BroadcastMusic.BUTTON_PREVIOUS);
@@ -420,10 +428,11 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                 .setContentIntent(pendingIntent)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .build();
-
+        //pending intent to broadcast
         notificationLayout.setOnClickPendingIntent(R.id.btnPreviousNotify, pendingIntentPrevious);
         notificationLayout.setOnClickPendingIntent(R.id.btnPlayNotify, pendingIntentPlay);
         notificationLayout.setOnClickPendingIntent(R.id.btnNextNotify, pendingIntentNext);
+        //chuyển image uri sang bitmap
         Glide.with(this)
                 .asBitmap()
                 .load(musicList.get(position).getMusicImage())

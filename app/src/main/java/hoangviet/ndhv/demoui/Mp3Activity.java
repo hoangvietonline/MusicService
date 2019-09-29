@@ -36,9 +36,11 @@ public class Mp3Activity extends AppCompatActivity implements MusicAdapter.onCli
         musicList = new ArrayList<>();
         adapter = new MusicAdapter(this, this, musicList);
         addMusic();
+        //làm cho recyclerView mượt và không bị giật
         recyclerView.setHasFixedSize(true);
         recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         recyclerView.setAdapter(adapter);
+        //when start app, init services
         Intent intentService = new Intent(this, MyMusicServices.class);
         startService(intentService);
     }
@@ -52,7 +54,7 @@ public class Mp3Activity extends AppCompatActivity implements MusicAdapter.onCli
         musicList.add(new Music("Rồi người thương cũng hóa người dưng", "Hiền Hồ", "https://vcdn-ione.vnecdn.net/2018/12/13/43623062-928967060639978-82410-4074-2366-1544693013.png", false));
     }
 
-
+    //when click item recyclerView
     @Override
     public void onclickItem(int position, Music music) {
         for (int j = 0; j < musicList.size(); j++) {
@@ -70,11 +72,12 @@ public class Mp3Activity extends AppCompatActivity implements MusicAdapter.onCli
         Bundle bundle = new Bundle();
         bundle.putInt(POSITION_KEY, position);
         bundle.putParcelable(MUSIC_KEY, music);
+        //but trạng thái nút repeat và shuffle sang PlayMusicActivity
         bundle.putInt(STATE_REPEAT_ONE, stateRepeatOne);
         bundle.putInt(STATE_SHUFFLE, stateShuffle);
         intent.putExtra(BUNDLE_KEY, bundle);
 
-
+        //send broadcastCurrentTimeBroadcast position,nơi nhận broadcast là services
         Intent intentPlayMusic = new Intent();
         intentPlayMusic.setAction(MyMusicServices.CurrentTimeBroadcast.SEND_PLAY_MP3_ACTION);
         intentPlayMusic.putExtra(POSITION_PLAY_MP3, position);
@@ -83,9 +86,10 @@ public class Mp3Activity extends AppCompatActivity implements MusicAdapter.onCli
 
     }
 
-
+    //when click button play
     @Override
     public void onClickButtonPlay(Music music, int i) {
+        //set thuộc tính play and pause button Play
         for (int j = 0; j < musicList.size(); j++) {
             if (j != i) {
                 musicList.get(j).setPlay(false);
@@ -97,19 +101,23 @@ public class Mp3Activity extends AppCompatActivity implements MusicAdapter.onCli
                 }
             }
         }
+        //send position qua broadcast nơi nhân là service
         Intent intent = new Intent();
         intent.setAction(MyMusicServices.CurrentTimeBroadcast.SEND_PLAY_ACTION);
         intent.putExtra(POS_KEY, i);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+        //update recyclerView every click mouse
         adapter.notifyDataSetChanged();
     }
-
+    //get data when back from PlayMusicActivity to Mp3Activity
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         if (requestCode == REQUEST_CODE_PLAY_MUSIC && resultCode == RESULT_OK && data != null) {
             Music music1 = data.getParcelableExtra(PlayMusicActivity.POSITION_RESULTS);
+            //get state button repeatOne and Shuffle
             stateRepeatOne = data.getIntExtra("state_repeat_one", 0);
             stateShuffle = data.getIntExtra("state_shuffle", 0);
+            //set thuộc tính play and pause button Play
             for (int j = 0; j < musicList.size(); j++) {
                 if (!musicList.get(j).getMusicName().equals(music1.getMusicName())) {
                     musicList.get(j).setPlay(false);

@@ -8,7 +8,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
-import android.support.constraint.ConstraintLayout;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -46,7 +45,6 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
     private BroadcastMusic broadcastMusic;
     private int stateRepeatOnePlayMusic;
     private int stateShufflePlayMusic;
-    private ConstraintLayout constraintLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,7 +54,6 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         bind();
         list = new ArrayList<>();
         addMusic();
-//        final Animation animation = AnimationUtils.loadAnimation(this, R.anim.round_image);
         broadcastMusic = new BroadcastMusic();
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(BroadcastMusic.BUTTON_PREVIOUS);
@@ -64,7 +61,7 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         intentFilter.addAction(BroadcastMusic.BUTTON_NEXT);
         registerReceiver(broadcastMusic, intentFilter);
         broadcastMusic.setMyBroadcastCall(this);
-
+        // animation image avatar
         animation = ObjectAnimator.ofFloat(imgAvatarPlayMusic, "rotation", 0, 360);
         animation.setDuration(10000);
         animation.setRepeatMode(ValueAnimator.RESTART);
@@ -297,7 +294,6 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         seekBarPlayMusic = findViewById(R.id.seeBarPlayMusic);
         btnRepeatOneMusic = findViewById(R.id.btnRepeatPlayMusic);
         btnUnShuffleMusic = findViewById(R.id.btnShufflePlayMusic);
-        constraintLayout = findViewById(R.id.constraintLayoutView);
     }
 
     private void addMusic() {
