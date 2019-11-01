@@ -1,4 +1,4 @@
-package hoangviet.ndhv.demoui;
+package hoangviet.ndhv.musicplay;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -448,8 +448,6 @@ public class MyMusicServices extends Service implements MediaPlayer.OnErrorListe
                     }
                 });
         startForeground(1, builder);
-
-
     }
 
     private void addMusic() {

@@ -1,4 +1,4 @@
-package hoangviet.ndhv.demoui;
+package hoangviet.ndhv.musicplay;
 
 import android.os.Parcel;
 import android.os.Parcelable;

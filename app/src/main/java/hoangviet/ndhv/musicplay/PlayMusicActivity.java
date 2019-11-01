@@ -1,4 +1,4 @@
-package hoangviet.ndhv.demoui;
+package hoangviet.ndhv.musicplay;
 
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
@@ -61,6 +61,7 @@ public class PlayMusicActivity extends AppCompatActivity implements BroadcastMus
         intentFilter.addAction(BroadcastMusic.BUTTON_NEXT);
         registerReceiver(broadcastMusic, intentFilter);
         broadcastMusic.setMyBroadcastCall(this);
+
         // animation image avatar
         animation = ObjectAnimator.ofFloat(imgAvatarPlayMusic, "rotation", 0, 360);
         animation.setDuration(10000);

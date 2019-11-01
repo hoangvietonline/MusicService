@@ -1,4 +1,4 @@
-package hoangviet.ndhv.demoui;
+package hoangviet.ndhv.musicplay;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
