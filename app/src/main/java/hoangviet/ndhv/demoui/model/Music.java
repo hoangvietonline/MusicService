@@ -1,4 +1,4 @@
-package hoangviet.ndhv.demoui;
+package hoangviet.ndhv.demoui.model;
 
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -21,20 +21,20 @@ public class Music implements Parcelable {
     private int fileSong;
     private boolean isPlay;
 
-    Music(String musicName, String musicSinger, String musicImage, int fileSong) {
+    public Music(String musicName, String musicSinger, String musicImage, int fileSong) {
         this.musicName = musicName;
         this.musicSinger = musicSinger;
         this.musicImage = musicImage;
         this.fileSong = fileSong;
     }
 
-    Music(String musicName, String musicSinger, String musicImage) {
+    public Music(String musicName, String musicSinger, String musicImage) {
         this.musicName = musicName;
         this.musicSinger = musicSinger;
         this.musicImage = musicImage;
     }
 
-    Music(String musicName, String musicSinger, String musicImage, boolean isPlay) {
+    public Music(String musicName, String musicSinger, String musicImage, boolean isPlay) {
         this.musicName = musicName;
         this.musicSinger = musicSinger;
         this.musicImage = musicImage;

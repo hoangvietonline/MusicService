@@ -1,27 +1,27 @@
-package hoangviet.ndhv.demoui;
+package hoangviet.ndhv.demoui.ui.main;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class Mp3Activity extends AppCompatActivity implements MusicAdapter.onClickItemMusicLitener {
-    public static final String POS_KEY = "pos_key";
-    public static final String POSITION_KEY = "position_key";
-    public static final String BUNDLE_KEY = "bundle_key";
-    public static final String MUSIC_KEY = "music_key";
-    public static final String POSITION_PLAY_MP3 = "position_play_mp3";
-    public static final int REQUEST_CODE_PLAY_MUSIC = 1245;
-    public static final String STATE_REPEAT_ONE = "state_repeat_one";
-    public static final String STATE_SHUFFLE = "state_shuffle";
+import hoangviet.ndhv.demoui.R;
+import hoangviet.ndhv.demoui.common.Constant;
+import hoangviet.ndhv.demoui.model.Music;
+import hoangviet.ndhv.demoui.service.MyMusicServices;
+import hoangviet.ndhv.demoui.ui.playmusic.PlayMusicActivity;
+
+public class MainActivity extends AppCompatActivity implements MusicAdapter.onClickItemMusicListener {
     private static final String TAG = "Mp3Activity";
+    private static final int REQUEST_CODE_PLAY_MUSIC = 1245;
     private List<Music> musicList;
     private MusicAdapter adapter;
     private int stateRepeatOne = 0;
@@ -31,18 +31,17 @@ public class Mp3Activity extends AppCompatActivity implements MusicAdapter.onCli
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_mp3);
-        Log.d(TAG, "onCreate: ");
         RecyclerView recyclerView = findViewById(R.id.recyclerViewMusic);
         musicList = new ArrayList<>();
-        adapter = new MusicAdapter(this, this, musicList);
-        addMusic();
-        //làm cho recyclerView mượt và không bị giật
+        adapter = new MusicAdapter(this);
+        recyclerView.setAdapter(adapter);
         recyclerView.setHasFixedSize(true);
         recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
-        recyclerView.setAdapter(adapter);
+        addMusic();
         //when start app, init services
         Intent intentService = new Intent(this, MyMusicServices.class);
         startService(intentService);
+        adapter.setOnClickItemMusicListener(this);
     }
 
     private void addMusic() {
@@ -52,6 +51,7 @@ public class Mp3Activity extends AppCompatActivity implements MusicAdapter.onCli
         musicList.add(new Music("Hồng Nhan", "Jack", "https://kenh14cdn.com/zoom/700_438/2019/4/16/520385336113309193300413143308017856937984n-15554316885891494708426-crop-15554316943631888232929.jpg", false));
         musicList.add(new Music("Mây và núi", "The Bells", "https://www.pngkey.com/png/detail/129-1296419_cartoon-mountains-png-mountain-animation-png.png", false));
         musicList.add(new Music("Rồi người thương cũng hóa người dưng", "Hiền Hồ", "https://vcdn-ione.vnecdn.net/2018/12/13/43623062-928967060639978-82410-4074-2366-1544693013.png", false));
+        adapter.addMusicList(musicList);
     }
 
     //when click item recyclerView
@@ -68,22 +68,21 @@ public class Mp3Activity extends AppCompatActivity implements MusicAdapter.onCli
                 }
             }
         }
-        Intent intent = new Intent(Mp3Activity.this, PlayMusicActivity.class);
+        Intent intent = new Intent(MainActivity.this, PlayMusicActivity.class);
         Bundle bundle = new Bundle();
-        bundle.putInt(POSITION_KEY, position);
-        bundle.putParcelable(MUSIC_KEY, music);
+        bundle.putInt(Constant.POSITION_KEY, position);
+        bundle.putParcelable(Constant.MUSIC_KEY, music);
         //but trạng thái nút repeat và shuffle sang PlayMusicActivity
-        bundle.putInt(STATE_REPEAT_ONE, stateRepeatOne);
-        bundle.putInt(STATE_SHUFFLE, stateShuffle);
-        intent.putExtra(BUNDLE_KEY, bundle);
+        bundle.putInt(Constant.STATE_REPEAT_ONE, stateRepeatOne);
+        bundle.putInt(Constant.STATE_SHUFFLE, stateShuffle);
+        intent.putExtra(Constant.BUNDLE_KEY, bundle);
 
         //send broadcastCurrentTimeBroadcast position,nơi nhận broadcast là services
         Intent intentPlayMusic = new Intent();
         intentPlayMusic.setAction(MyMusicServices.CurrentTimeBroadcast.SEND_PLAY_MP3_ACTION);
-        intentPlayMusic.putExtra(POSITION_PLAY_MP3, position);
+        intentPlayMusic.putExtra(Constant.POSITION_PLAY_MP3, position);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intentPlayMusic);
         startActivityForResult(intent, REQUEST_CODE_PLAY_MUSIC);
-
     }
 
     //when click button play
@@ -104,16 +103,18 @@ public class Mp3Activity extends AppCompatActivity implements MusicAdapter.onCli
         //send position qua broadcast nơi nhân là service
         Intent intent = new Intent();
         intent.setAction(MyMusicServices.CurrentTimeBroadcast.SEND_PLAY_ACTION);
-        intent.putExtra(POS_KEY, i);
+        intent.putExtra(Constant.POS_KEY, i);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
         //update recyclerView every click mouse
         adapter.notifyDataSetChanged();
     }
+
     //get data when back from PlayMusicActivity to Mp3Activity
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQUEST_CODE_PLAY_MUSIC && resultCode == RESULT_OK && data != null) {
-            Music music1 = data.getParcelableExtra(PlayMusicActivity.POSITION_RESULTS);
+            Music music1 = data.getParcelableExtra(Constant.POSITION_RESULTS);
             //get state button repeatOne and Shuffle
             stateRepeatOne = data.getIntExtra("state_repeat_one", 0);
             stateShuffle = data.getIntExtra("state_shuffle", 0);
